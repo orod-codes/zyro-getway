@@ -24,11 +24,11 @@
 
 ## Zyro Gateway
 
-Zyro Gateway is a framework-agnostic real-time sync layer for TypeScript and JavaScript. It moves **payment and income events** from mobile clients to desktops and web surfaces over Socket.IO, with HTTP fallback when long-lived connections are unavailable. Pairing rooms, a REST surface, and a bundled browser SDK (`Zyro.connect`) ship in one npm package so you can integrate income sync without building transport, discovery, and fan-out yourself.
+Zyro Gateway is a framework-agnostic real-time sync layer for TypeScript and JavaScript. It moves **payment and income events** from mobile clients to **web clients and systems** over Socket.IO, with HTTP fallback when long-lived connections are unavailable. Pairing rooms, a REST surface, and a bundled browser SDK (`Zyro.connect`) ship in one npm package so you can integrate income sync without building transport, discovery, and fan-out yourself.
 
 ### Why Zyro Gateway
 
-Reliable delivery of **transaction data** across devices on a local network is rarely a single library—it is usually custom sockets, polling endpoints, and fragile “connected” states that diverge from what the server actually sees. Zyro Gateway treats that as one problem: authenticate a pairing code, register clients, broadcast income and notifications, and expose the same events to terminals and browsers from a small Node process—hence, Zyro Gateway.
+Reliable delivery of **transaction data** across devices on a local network is rarely a single library—it is usually custom sockets, polling endpoints, and fragile “connected” states that diverge from what the server actually sees. Zyro Gateway treats that as one problem: authenticate a pairing code, register clients, broadcast income and notifications, and expose the same events to **web and system** consumers from a small Node process—hence, Zyro Gateway.
 
 <p align="center">
   <a href="#quick-start">Quick start</a>
@@ -197,7 +197,7 @@ flowchart LR
 ### Data flow
 
 1. Phone joins room `pairing:MYSTORE` (Socket.IO) or calls `POST /api/register` + `POST /api/income` (HTTP).
-2. Gateway stores transactions in memory (per pairing room), broadcasts to all desktops in that room.
+2. Gateway stores transactions in memory (per pairing room), broadcasts to all web and system clients in that room.
 3. Terminal prints each income: **amount**, **name**, **sender**, **reference**.
 4. Web clients receive `income_transaction`, `dashboard_update`, and `presence` events.
 
@@ -207,7 +207,7 @@ flowchart LR
 |--------|---------|----------|
 | Phone | Socket.IO (`income_transaction`) | `POST /api/income`, `POST /api/register` |
 | Website | Socket.IO + `Zyro.connect` | HTTP polling (`pollIntervalMs`) |
-| Desktop probe | `GET /api/info` | — |
+| Web / system probe | `GET /api/info` | — |
 
 ---
 
@@ -376,7 +376,7 @@ Today’s totals and recent activity.
 
 #### `GET /api/devices?pairing=MYSTORE`
 
-Connected phones and desktops in the room.
+Connected mobile, web, and system clients in the room.
 
 #### `GET /api/transactions?pairing=MYSTORE&after=2026-05-17T08:00:00.000Z`
 
@@ -444,7 +444,7 @@ ws://<ip>:<port>/socket.io/?pairing=MYSTORE&role=phone&deviceName=My%20Phone
 | Query | Values |
 |-------|--------|
 | `pairing` | Required, 4–12 alphanumeric |
-| `role` | `phone` \| `desktop` |
+| `role` | `phone` (mobile) \| `desktop` (web / system client) |
 | `deviceName` | Optional display name |
 
 ### Client → server
@@ -466,7 +466,7 @@ ws://<ip>:<port>/socket.io/?pairing=MYSTORE&role=phone&deviceName=My%20Phone
 | `income_transaction` | Live transaction |
 | `notification_event` | Live notification |
 | `dashboard_update` | Aggregated stats |
-| `presence` | Phone/desktop counts + device list |
+| `presence` | Client counts by role + device list |
 | `device_joined` / `device_left` / `device_updated` | Device lifecycle |
 
 ### Transaction payload (recommended fields)
