@@ -1,8 +1,17 @@
 {
-  "name": "zyro",
+  "name": "zyro-gateway",
   "version": "1.0.0",
-  "description": "Zyro Gateway — real-time phone ↔ PC sync (terminal server + browser client)",
+  "description": "Zyro Gateway — real-time phone ↔ desktop sync (Node server + browser client)",
   "license": "MIT",
+  "author": "orod-codes",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orod-codes/zyro-getway.git"
+  },
+  "homepage": "https://github.com/orod-codes/zyro-getway#readme",
+  "bugs": {
+    "url": "https://github.com/orod-codes/zyro-getway/issues"
+  },
   "main": "dist/zyro.js",
   "module": "zyro/zyro.js",
   "browser": "dist/zyro.js",
@@ -12,17 +21,25 @@
       "require": "./dist/zyro.js",
       "default": "./dist/zyro.js"
     },
-    "./server": "./server.js",
+    "./server": {
+      "require": "./src/index.js",
+      "default": "./src/index.js"
+    },
     "./config.example": "./zyro.config.example.js",
     "./package.json": "./package.json"
   },
   "files": [
+    "assets",
+    "bin",
     "dist",
+    "src",
     "zyro",
     "scripts",
     "zyro.config.example.js",
     "server.js",
-    "README.md"
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "start": "node server.js",
@@ -30,10 +47,11 @@
     "build": "node scripts/build-zyro.js",
     "config": "node scripts/init-config.js",
     "prestart": "npm run build",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build"
   },
   "bin": {
-    "zyro-gateway": "server.js"
+    "zyro-gateway": "bin/zyro-gateway.js"
   },
   "engines": {
     "node": ">=18"
@@ -43,9 +61,11 @@
     "zyro-gateway",
     "socket.io",
     "real-time",
-    "ethiopia",
+    "payment-sync",
     "telebirr",
-    "payment-sync"
+    "ethiopia",
+    "flutter",
+    "sms-monitor"
   ],
   "dependencies": {
     "express": "^4.21.2",
