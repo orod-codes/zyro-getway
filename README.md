@@ -1,44 +1,59 @@
 <p align="center">
-  <strong>Zyro Gateway</strong><br>
-  Real-time bridge between your phone monitor, terminal, and website.
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/zyro-logo.svg" />
+    <img src="./assets/zyro-logo.svg" alt="Zyro Gateway" width="120" height="120" />
+  </picture>
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/zyro-gateway"><img src="https://img.shields.io/npm/v/zyro-gateway?style=flat-square&color=cb3837" alt="npm version"></a>
-  <a href="https://www.npmjs.com/package/zyro-gateway"><img src="https://img.shields.io/npm/dm/zyro-gateway?style=flat-square" alt="npm downloads"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License MIT"></a>
-  <img src="https://img.shields.io/badge/node-%3E%3D18-339933?style=flat-square&logo=node.js&logoColor=white" alt="Node 18+">
-  <a href="https://github.com/orod-codes/zyro-getway/issues"><img src="https://img.shields.io/github/issues/orod-codes/zyro-getway?style=flat-square" alt="Issues"></a>
+  <a href="https://www.npmjs.com/package/zyro-gateway">
+    <img src="https://img.shields.io/npm/dm/zyro-gateway?style=flat&colorA=000000&colorB=000000" alt="npm downloads" />
+  </a>
+  <a href="https://www.npmjs.com/package/zyro-gateway">
+    <img src="https://img.shields.io/npm/v/zyro-gateway.svg?style=flat&colorA=000000&colorB=000000" alt="npm version" />
+  </a>
+  <a href="https://github.com/orod-codes/zyro-getway/stargazers">
+    <img src="https://img.shields.io/github/stars/orod-codes/zyro-getway?style=flat&colorA=000000&colorB=000000" alt="GitHub stars" />
+  </a>
 </p>
 
 <p align="center">
-  <a href="#quick-start">Quick start</a> ·
-  <a href="#architecture">Architecture</a> ·
-  <a href="#configuration">Configuration</a> ·
-  <a href="#http-api">HTTP API</a> ·
-  <a href="#browser-client">Browser client</a> ·
-  <a href="#troubleshooting">Troubleshooting</a> ·
+  <a href="https://www.npmjs.com/package/zyro-gateway">npm</a>
+  ·
+  <a href="https://github.com/orod-codes/zyro-getway">Website</a>
+  ·
+  <a href="https://github.com/orod-codes/zyro-getway/issues">Issues</a>
+</p>
+
+## Zyro Gateway
+
+Zyro Gateway is a framework-agnostic real-time sync server for TypeScript and JavaScript projects. It bridges a **phone income monitor** (Flutter), a **developer terminal**, and any **website or dashboard** with minimal setup—Socket.IO for live events, HTTP when sockets fail, and pairing rooms for multi-store deployments. Whether you run a hotel front desk, a retail counter, or a custom Telebirr/SMS monitor, it lets you focus on your product instead of wiring phone-to-PC pipelines from scratch.
+
+### Why Zyro Gateway
+
+Payment visibility from SMS on a phone to a browser on a PC is still a half-solved problem in many stacks. Teams often bolt together websockets, ad-hoc REST, and manual IP discovery—then break when Android blocks sockets or when two apps fight for the same port. Rather than treating “connected” as a UI lie while the server sees nothing, Zyro Gateway standardizes **registration**, **income broadcast**, **terminal logging**, and a **browser client** (`Zyro.connect`) in one small npm package—hence, Zyro Gateway.
+
+<p align="center">
+  <a href="#quick-start">Quick start</a>
+  ·
+  <a href="#architecture">Architecture</a>
+  ·
+  <a href="#configuration">Configuration</a>
+  ·
+  <a href="#http-api">HTTP API</a>
+  ·
+  <a href="#browser-client">Browser client</a>
+  ·
+  <a href="#troubleshooting">Troubleshooting</a>
+  ·
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
----
-
-## Overview
-
-**Zyro Gateway** is a lightweight Node.js server that syncs **income transactions** and **notifications** from a mobile monitor app (Flutter) to:
-
-- A **terminal** on your PC (live device list + income logs)
-- Any **website** or dashboard (via `Zyro.connect` or REST)
-
-It uses **Socket.IO** for real-time delivery and falls back to **HTTP** when sockets are blocked—so phones still show “connected” and the terminal still receives income.
-
 | Use case | How Zyro helps |
 |----------|----------------|
-| Store / hotel front desk | See payments on a web dashboard as SMS income arrives on the phone |
-| Developer debugging | Terminal prints amount, payer name, sender, and transaction ref |
-| Multi-tenant | Each `pairingCode` isolates rooms (e.g. `MYSTORE`, `HOTEL12`) |
-
-**npm:** [`zyro-gateway`](https://www.npmjs.com/package/zyro-gateway) · **Repo:** [orod-codes/zyro-getway](https://github.com/orod-codes/zyro-getway)
+| Store / hotel front desk | Payments on a web dashboard as SMS income hits the phone |
+| Developer debugging | Terminal logs amount, name, sender, and transaction ref |
+| Multi-tenant | `pairingCode` isolates rooms (`MYSTORE`, `HOTEL12`, …) |
 
 ---
 
@@ -661,12 +676,18 @@ Issues and feature requests: [GitHub Issues](https://github.com/orod-codes/zyro-
 
 ---
 
+## Contribution
+
+Zyro Gateway is free and open source under the [MIT License](LICENSE). You are welcome to:
+
+- Fork the repo and open pull requests
+- [Report bugs or request features](https://github.com/orod-codes/zyro-getway/issues)
+- Improve docs and examples
+
+## Security
+
+Do not expose the gateway to the public internet without TLS and authentication. Pairing codes are shared secrets—rotate them per tenant. If you find a vulnerability, please open a [private security advisory](https://github.com/orod-codes/zyro-getway/security/advisories/new) on GitHub.
+
 ## License
 
 [MIT](LICENSE) © [orod-codes](https://github.com/orod-codes)
-
----
-
-<p align="center">
-  <sub>Built for developers who need phone → PC → web income sync without heavy infrastructure.</sub>
-</p>
