@@ -646,7 +646,7 @@ Enable 2FA on [npm settings](https://www.npmjs.com/settings) for publish.
 | Project | Role |
 |---------|------|
 | [zyro-getway](https://github.com/orod-codes/zyro-getway) | This repository (server + browser client) |
-| Ayrab Monitor (Flutter) | Phone-side SMS income monitor |
+| zyro-app (Flutter) | Phone-side SMS income monitor |
 
 ---
 
