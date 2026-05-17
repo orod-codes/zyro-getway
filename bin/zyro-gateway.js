@@ -1,0 +1,27 @@
+#!/usr/bin/env node
+'use strict';
+
+const cmd = process.argv[2];
+
+if (cmd === 'config' || cmd === 'init') {
+  require('../scripts/init-config.js');
+} else if (cmd === 'help' || cmd === '--help' || cmd === '-h') {
+  console.log(`
+Zyro Gateway — real-time phone ↔ desktop sync
+
+Usage:
+  zyro-gateway              Start the gateway server
+  zyro-gateway config       Create zyro.config.js in the current directory
+  zyro-gateway help         Show this message
+
+Environment:
+  PORT          Override listen port
+  ZYRO_CONFIG   Path to zyro.config.js
+
+Update: npm update z-getway  |  npx z-getway@latest
+
+Docs: https://github.com/orod-codes/zyro-getway#readme
+`);
+} else {
+  require('../src/index').start();
+}

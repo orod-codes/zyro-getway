@@ -1,9 +1,9 @@
 {
-  "name": "zyro-gateway",
+  "name": "z-getway",
   "version": "1.0.0",
-  "description": "Zyro Gateway — real-time phone ↔ desktop sync (Node server + browser client)",
+  "description": "Zyro Gateway — real-time sync for mobile, web, and system clients",
   "license": "MIT",
-  "author": "orod-codes",
+  "author": "dorsis",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/orod-codes/zyro-getway.git"
@@ -48,24 +48,24 @@
     "config": "node scripts/init-config.js",
     "prestart": "npm run build",
     "prepare": "npm run build",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "release": "npm version patch --no-git-tag-version && npm publish --access public"
   },
   "bin": {
+    "z-getway": "bin/z-getway.js",
     "zyro-gateway": "bin/zyro-gateway.js"
   },
   "engines": {
     "node": ">=18"
   },
   "keywords": [
+    "z-getway",
     "zyro",
     "zyro-gateway",
     "socket.io",
     "real-time",
     "payment-sync",
-    "telebirr",
-    "ethiopia",
-    "flutter",
-    "sms-monitor"
+    "income-sync"
   ],
   "dependencies": {
     "express": "^4.21.2",

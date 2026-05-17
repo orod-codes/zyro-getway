@@ -3,11 +3,11 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/zyro-gateway">
-    <img src="https://img.shields.io/npm/dm/zyro-gateway?style=flat&colorA=000000&colorB=000000" alt="npm downloads" />
+  <a href="https://www.npmjs.com/package/z-getway">
+    <img src="https://img.shields.io/npm/dm/z-getway?style=flat&colorA=000000&colorB=000000" alt="npm downloads" />
   </a>
-  <a href="https://www.npmjs.com/package/zyro-gateway">
-    <img src="https://img.shields.io/npm/v/zyro-gateway.svg?style=flat&colorA=000000&colorB=000000" alt="npm version" />
+  <a href="https://www.npmjs.com/package/z-getway">
+    <img src="https://img.shields.io/npm/v/z-getway.svg?style=flat&colorA=000000&colorB=000000" alt="npm version" />
   </a>
   <a href="https://github.com/orod-codes/zyro-getway/stargazers">
     <img src="https://img.shields.io/github/stars/orod-codes/zyro-getway?style=flat&colorA=000000&colorB=000000" alt="GitHub stars" />
@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/zyro-gateway">npm</a>
+  <a href="https://www.npmjs.com/package/z-getway">npm</a>
   ·
   <a href="https://github.com/orod-codes/zyro-getway">Website</a>
   ·
@@ -92,14 +92,14 @@ Reliable delivery of **transaction data** across devices on a local network is r
 ### From npm (recommended)
 
 ```bash
-npm install zyro-gateway
+npm install z-getway
 ```
 
 ### Global CLI (optional)
 
 ```bash
-npm install -g zyro-gateway
-zyro-gateway --help
+npm install -g z-getway
+z-getway --help
 ```
 
 ### From source
@@ -119,7 +119,7 @@ npm start
 **1. Create config** (in your project folder—not committed to git):
 
 ```bash
-npx zyro-gateway config
+npx z-getway config
 ```
 
 **2. Edit `zyro.config.js`:**
@@ -136,7 +136,7 @@ module.exports = {
 **3. Start the gateway:**
 
 ```bash
-npx zyro-gateway
+npx z-getway
 ```
 
 **4. Terminal output** (example):
@@ -159,9 +159,17 @@ npx zyro-gateway
 ### One-liner (no install)
 
 ```bash
-npx zyro-gateway@latest config
-npx zyro-gateway@latest
+npx z-getway@latest config
+npx z-getway@latest
 ```
+
+### Get the latest version (after you publish an update)
+
+| How you installed | Update command |
+|-------------------|----------------|
+| In a project | `npm update z-getway` |
+| One-off run | `npx z-getway@latest` |
+| Global CLI | `npm install -g z-getway@latest` |
 
 ---
 
@@ -227,7 +235,7 @@ flowchart LR
 ### Config file resolution order
 
 1. `ZYRO_CONFIG` — absolute path via environment variable  
-2. `./zyro.config.js` — current working directory (where you run `npx zyro-gateway`)  
+2. `./zyro.config.js` — current working directory (where you run `npx z-getway`)  
 3. Package directory — fallback when running from `node_modules`
 
 ### Environment variables
@@ -240,7 +248,7 @@ flowchart LR
 Example:
 
 ```bash
-PORT=3002 ZYRO_CONFIG=/etc/zyro/prod.config.js npx zyro-gateway
+PORT=3002 ZYRO_CONFIG=/etc/zyro/prod.config.js npx z-getway
 ```
 
 ---
@@ -307,7 +315,7 @@ The gateway serves a bundled IIFE at **`/zyro/zyro.js`** (global `Zyro`).
 ### ESM / Vite / Webpack
 
 ```javascript
-import { connect, EVENTS } from 'zyro-gateway';
+import { connect, EVENTS } from 'z-getway';
 
 const sync = connect({
   serverUrl: 'http://192.168.1.10:3001',
@@ -487,7 +495,7 @@ ws://<ip>:<port>/socket.io/?pairing=MYSTORE&role=phone&deviceName=My%20Phone
 Embed the gateway in your own Node process:
 
 ```javascript
-const { createGateway } = require('zyro-gateway/server');
+const { createGateway } = require('z-getway/server');
 
 async function main() {
   const gateway = createGateway({
@@ -513,9 +521,9 @@ Useful for tests, Electron backends, or custom hosting.
 
 | Command | Description |
 |---------|-------------|
-| `zyro-gateway` | Start server (builds client if needed) |
-| `zyro-gateway config` | Copy `zyro.config.example.js` → `./zyro.config.js` |
-| `zyro-gateway help` | Show usage |
+| `z-getway` | Start server (builds client if needed) |
+| `z-getway config` | Copy `zyro.config.example.js` → `./zyro.config.js` |
+| `z-getway help` | Show usage |
 
 ### npm scripts (repository)
 
@@ -532,7 +540,7 @@ Useful for tests, Electron backends, or custom hosting.
 
 ```
 zyro-getway/
-├── bin/zyro-gateway.js      # CLI entry
+├── bin/z-getway.js          # CLI entry (`zyro-gateway` alias)
 ├── src/
 │   ├── config/              # load-config.js, pairing.js
 │   ├── server/              # routes, socket, broadcast, terminal
@@ -564,8 +572,8 @@ npm run dev
 
 ```bash
 cd zyro-getway && npm link
-cd ~/my-app && npm link zyro-gateway
-npx zyro-gateway
+cd ~/my-app && npm link z-getway
+npx z-getway
 ```
 
 ### Run tests manually
@@ -577,23 +585,19 @@ curl "http://localhost:3001/api/dashboard?pairing=MYSTORE"
 
 ---
 
-## Publishing updates
+## Publishing updates (maintainers)
 
 From the package root, after code changes:
 
 ```bash
-npm version patch && npm publish --access public
+npm run release
 ```
 
-Consumers update with:
-
-```bash
-npm update zyro-gateway
-# or
-npx zyro-gateway@latest
-```
+That bumps the patch version, builds, and publishes **`z-getway`** to npm. Users then run `npm update z-getway` or `npx z-getway@latest`.
 
 See [CHANGELOG.md](CHANGELOG.md) for version history.
+
+> **Note:** The older npm name [`zyro-gateway`](https://www.npmjs.com/package/zyro-gateway) is deprecated; use **`z-getway`** going forward.
 
 ---
 
@@ -611,7 +615,7 @@ ss -tlnp | grep 3001
 kill <PID>
 
 # Or use another port
-PORT=3002 npx zyro-gateway
+PORT=3002 npx z-getway
 ```
 
 Update the phone app and `zyro.config.js` to match.
@@ -639,7 +643,7 @@ Enable 2FA on [npm settings](https://www.npmjs.com/settings) for publish.
 
 ### Wrong config loaded
 
-`npx zyro-gateway` reads **`./zyro.config.js` in the current directory**. Run `npx zyro-gateway config` in each project, or set `ZYRO_CONFIG`.
+`npx z-getway` reads **`./zyro.config.js` in the current directory**. Run `npx z-getway config` in each project, or set `ZYRO_CONFIG`.
 
 ---
 

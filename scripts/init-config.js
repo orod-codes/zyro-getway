@@ -18,4 +18,4 @@ if (!fs.existsSync(example)) {
 
 fs.copyFileSync(example, target);
 console.log('Created', target);
-console.log('Edit ip, port, pairingCode then run: npm start');
+console.log('Edit ip, port, pairingCode then run: npx z-getway');
