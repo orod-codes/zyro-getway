@@ -24,11 +24,11 @@
 
 ## Zyro Gateway
 
-Zyro Gateway is a framework-agnostic real-time sync layer for TypeScript and JavaScript. It moves **SMS-derived payment events** from mobile clients to desktops and web surfaces over Socket.IO, with HTTP fallback when long-lived connections are unavailable. Pairing rooms, a REST surface, and a bundled browser SDK (`Zyro.connect`) ship in one npm package so you can integrate income sync without building transport, discovery, and fan-out yourself.
+Zyro Gateway is a framework-agnostic real-time sync layer for TypeScript and JavaScript. It moves **payment and income events** from mobile clients to desktops and web surfaces over Socket.IO, with HTTP fallback when long-lived connections are unavailable. Pairing rooms, a REST surface, and a bundled browser SDK (`Zyro.connect`) ship in one npm package so you can integrate income sync without building transport, discovery, and fan-out yourself.
 
 ### Why Zyro Gateway
 
-Reliable delivery of **SMS-sourced transaction data** across devices on a local network is rarely a single library—it is usually custom sockets, polling endpoints, and fragile “connected” states that diverge from what the server actually sees. Zyro Gateway treats that as one problem: authenticate a pairing code, register clients, broadcast income and notifications, and expose the same events to terminals and browsers from a small Node process—hence, Zyro Gateway.
+Reliable delivery of **transaction data** across devices on a local network is rarely a single library—it is usually custom sockets, polling endpoints, and fragile “connected” states that diverge from what the server actually sees. Zyro Gateway treats that as one problem: authenticate a pairing code, register clients, broadcast income and notifications, and expose the same events to terminals and browsers from a small Node process—hence, Zyro Gateway.
 
 <p align="center">
   <a href="#quick-start">Quick start</a>
@@ -48,7 +48,7 @@ Reliable delivery of **SMS-sourced transaction data** across devices on a local 
 
 | Capability | Description |
 |------------|-------------|
-| SMS income sync | Push parsed payment fields from mobile to gateway in real time |
+| Income sync | Push payment fields from mobile to gateway in real time |
 | Dual transport | Socket.IO primary; HTTP register + POST when sockets drop |
 | Isolated rooms | `pairingCode` scopes clients and event streams per deployment |
 
@@ -170,7 +170,7 @@ npx zyro-gateway@latest
 ```mermaid
 flowchart LR
   subgraph Phone["Mobile client"]
-    SMS[SMS income parser]
+    PAY[Income events]
   end
 
   subgraph Gateway["Zyro Gateway (Node.js)"]
@@ -188,7 +188,7 @@ flowchart LR
     TTY[Developer terminal]
   end
 
-  SMS -->|socket or HTTP| Gateway
+  PAY -->|socket or HTTP| Gateway
   WEB -->|socket| Gateway
   ROOM --> WEB
   TERM --> TTY
@@ -475,10 +475,10 @@ ws://<ip>:<port>/socket.io/?pairing=MYSTORE&role=phone&deviceName=My%20Phone
 |-------|------|-------------|
 | `amount` | `number` | Income amount |
 | `name` | `string` | Payer / customer name |
-| `sender` | `string` | SMS address or account |
-| `transactionNumber` | `string` | Provider / bank reference from SMS |
+| `sender` | `string` | Source address or account |
+| `transactionNumber` | `string` | Provider / bank reference |
 | `timestamp` | `string` | ISO time (optional) |
-| `smsAddress` | `string` | Alias for sender |
+| `smsAddress` | `string` | Optional alias for `sender` (API field name) |
 
 ---
 
@@ -658,7 +658,7 @@ Enable 2FA on [npm settings](https://www.npmjs.com/settings) for publish.
 | Project | Role |
 |---------|------|
 | [zyro-getway](https://github.com/orod-codes/zyro-getway) | This repository (server + browser client) |
-| Mobile monitor | Client that parses SMS and posts income to the gateway |
+| Mobile monitor | Client that captures income and posts events to the gateway |
 
 ---
 
