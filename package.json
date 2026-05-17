@@ -1,0 +1,44 @@
+{
+  "name": "zyro",
+  "version": "1.0.0",
+  "description": "Zyro Gateway — web client for real-time phone ↔ website sync",
+  "main": "dist/zyro.js",
+  "module": "zyro/zyro.js",
+  "browser": "dist/zyro.js",
+  "files": [
+    "dist",
+    "zyro",
+    "zyro.config.example.js",
+    "server.js",
+    "public"
+  ],
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "build": "node scripts/build-zyro.js",
+    "prestart": "node -e \"const fs=require('fs');const p='scripts/build-zyro.js';if(fs.existsSync(p))require('child_process').execSync('node '+p,{stdio:'inherit'})\"",
+    "prepare": "npm run build"
+  },
+  "bin": {
+    "zyro-gateway": "server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "zyro",
+    "zyro-gateway",
+    "zyrogetway",
+    "getway",
+    "socket.io",
+    "real-time",
+    "web"
+  ],
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

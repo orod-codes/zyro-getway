@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Zyro — Web Sync Portal</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/zyro/zyro.js"></script>
+  <script src="zyro.config.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">Z</motion>
+        <div>
+          <strong>Zyro Sync</strong>
+          <span>Web portal demo</span>
+        </div>
+      </motion>
+
+      <nav class="nav" aria-label="Main">
+        <button type="button" class="nav-item active" data-panel="dashboard">Dashboard</button>
+        <button type="button" class="nav-item" data-panel="transactions">Transactions</button>
+        <button type="button" class="nav-item" data-panel="notifications">Notifications</button>
+        <button type="button" class="nav-item" data-panel="devices">Devices</button>
+      </nav>
+
+      <section class="sidebar-card">
+        <h3>Pairing</h3>
+        <p class="hint">Zyro app → Setup → Zyro Gateway</p>
+        <code id="pairingCode" class="pairing-code">······</code>
+        <button type="button" id="copyPairing" class="btn btn-ghost">Copy code</button>
+        <p class="url-line"><span id="serverUrl">—</span></p>
+      </section>
+
+      <section class="sidebar-status">
+        <div class="status-pill" id="serverStatus">Connecting…</motion>
+        <div class="status-pill" id="phoneStatus">Phone: waiting</motion>
+      </section>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1 id="panelTitle">Dashboard</h1>
+          <p id="panelSubtitle">Real-time monitoring from your connected phone</p>
+        </motion>
+        <div class="topbar-actions">
+          <button type="button" id="demoNotification" class="btn btn-secondary">Simulate notification</button>
+          <button type="button" id="demoTransaction" class="btn btn-primary">Simulate income</button>
+        </motion>
+      </header>
+
+      <!-- Dashboard -->
+      <section id="panel-dashboard" class="panel active">
+        <div class="metrics">
+          <article class="metric-card highlight">
+            <span class="metric-label">Today income</span>
+            <span class="metric-value" id="dashTodayTotal">ETB 0.00</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">Transactions</span>
+            <span class="metric-value" id="dashTxCount">0</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">Notifications synced</span>
+            <span class="metric-value" id="dashNoteCount">0</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">Matched to income</span>
+            <span class="metric-value" id="dashMatchedCount">0</span>
+          </article>
+        </motion>
+
+        <div class="grid-2">
+          <article class="card">
+            <h2>Activity (last hour)</h2>
+            <div id="activityChart" class="activity-chart" aria-hidden="true"></motion>
+            <p class="chart-legend">Bars = income events per 5 min window</p>
+          </article>
+          <article class="card">
+            <h2>Connection health</h2>
+            <ul class="health-list">
+              <li><span>Web client</span><strong id="healthWeb">—</strong></li>
+              <li><span>Phone link</span><strong id="healthPhone">—</strong></li>
+              <li><span>Sync transport</span><strong id="healthTransport">Socket.IO + HTTP poll</strong></li>
+              <li><span>Last server ping</span><strong id="healthServerTime">—</strong></li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="grid-2">
+          <article class="card">
+            <h2>Recent transactions</h2>
+            <ul id="dashRecentTx" class="compact-list"></ul>
+          </article>
+          <article class="card">
+            <h2>Recent notifications</h2>
+            <ul id="dashRecentNotes" class="compact-list"></ul>
+          </article>
+        </motion>
+      </section>
+
+      <!-- Transactions -->
+      <section id="panel-transactions" class="panel">
+        <div class="metrics metrics-inline">
+          <article class="metric-card highlight">
+            <span class="metric-label">Today total</span>
+            <span class="metric-value" id="todayTotal">ETB 0.00</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">In feed</span>
+            <span class="metric-value" id="txCount">0</span>
+          </article>
+        </div>
+        <article class="card feed-card">
+          <h2>Live income stream</h2>
+          <p class="hint">Updates instantly when your phone detects bank income.</p>
+          <ul id="feed" class="feed">
+            <li class="feed-empty">Waiting for income from your phone…</li>
+          </ul>
+        </article>
+      </section>
+
+      <!-- Notifications -->
+      <section id="panel-notifications" class="panel">
+        <article class="card">
+          <h2>Notification sync</h2>
+          <p class="hint">SMS and app notifications mirrored from the phone in real time.</p>
+          <ul id="notificationFeed" class="notification-feed">
+            <li class="feed-empty">No notifications yet — connect your phone or use Simulate.</li>
+          </ul>
+        </article>
+      </section>
+
+      <!-- Devices -->
+      <section id="panel-devices" class="panel">
+        <article class="card">
+          <h2>Connected devices</h2>
+          <p class="hint">Phones and web dashboards joined with the same pairing code.</p>
+          <div class="device-table-wrap">
+            <table class="device-table">
+              <thead>
+                <tr>
+                  <th>Device</th>
+                  <th>Role</th>
+                  <th>Platform</th>
+                  <th>Connected</th>
+                  <th>Last seen</th>
+                </tr>
+              </thead>
+              <tbody id="deviceTableBody">
+                <tr><td colspan="5" class="empty-cell">No devices connected</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+  <script src="app.js?v=5"></script>
+</body>
+</html>
