@@ -1,8 +1,5 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./assets/zyro-logo.svg" />
-    <img src="./assets/zyro-logo.svg" alt="Zyro Gateway" width="120" height="120" />
-  </picture>
+  <img src="./assets/zyro-logo.png" alt="Zyro Gateway" width="140" height="140" />
 </p>
 
 <p align="center">
