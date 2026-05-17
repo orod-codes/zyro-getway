@@ -24,11 +24,11 @@
 
 ## Zyro Gateway
 
-Zyro Gateway is a framework-agnostic real-time sync server for TypeScript and JavaScript projects. It bridges a **phone income monitor** (Flutter), a **developer terminal**, and any **website or dashboard** with minimal setup—Socket.IO for live events, HTTP when sockets fail, and pairing rooms for multi-store deployments. Whether you run a hotel front desk, a retail counter, or a custom Telebirr/SMS monitor, it lets you focus on your product instead of wiring phone-to-PC pipelines from scratch.
+Zyro Gateway is a framework-agnostic real-time sync layer for TypeScript and JavaScript. It moves **SMS-derived payment events** from mobile clients to desktops and web surfaces over Socket.IO, with HTTP fallback when long-lived connections are unavailable. Pairing rooms, a REST surface, and a bundled browser SDK (`Zyro.connect`) ship in one npm package so you can integrate income sync without building transport, discovery, and fan-out yourself.
 
 ### Why Zyro Gateway
 
-Payment visibility from SMS on a phone to a browser on a PC is still a half-solved problem in many stacks. Teams often bolt together websockets, ad-hoc REST, and manual IP discovery—then break when Android blocks sockets or when two apps fight for the same port. Rather than treating “connected” as a UI lie while the server sees nothing, Zyro Gateway standardizes **registration**, **income broadcast**, **terminal logging**, and a **browser client** (`Zyro.connect`) in one small npm package—hence, Zyro Gateway.
+Reliable delivery of **SMS-sourced transaction data** across devices on a local network is rarely a single library—it is usually custom sockets, polling endpoints, and fragile “connected” states that diverge from what the server actually sees. Zyro Gateway treats that as one problem: authenticate a pairing code, register clients, broadcast income and notifications, and expose the same events to terminals and browsers from a small Node process—hence, Zyro Gateway.
 
 <p align="center">
   <a href="#quick-start">Quick start</a>
@@ -46,11 +46,11 @@ Payment visibility from SMS on a phone to a browser on a PC is still a half-solv
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
-| Use case | How Zyro helps |
-|----------|----------------|
-| Store / hotel front desk | Payments on a web dashboard as SMS income hits the phone |
-| Developer debugging | Terminal logs amount, name, sender, and transaction ref |
-| Multi-tenant | `pairingCode` isolates rooms (`MYSTORE`, `HOTEL12`, …) |
+| Capability | Description |
+|------------|-------------|
+| SMS income sync | Push parsed payment fields from mobile to gateway in real time |
+| Dual transport | Socket.IO primary; HTTP register + POST when sockets drop |
+| Isolated rooms | `pairingCode` scopes clients and event streams per deployment |
 
 ---
 
@@ -169,8 +169,8 @@ npx zyro-gateway@latest
 
 ```mermaid
 flowchart LR
-  subgraph Phone["Phone app (Flutter)"]
-    SMS[SMS / income monitor]
+  subgraph Phone["Mobile client"]
+    SMS[SMS income parser]
   end
 
   subgraph Gateway["Zyro Gateway (Node.js)"]
@@ -247,7 +247,7 @@ PORT=3002 ZYRO_CONFIG=/etc/zyro/prod.config.js npx zyro-gateway
 
 ## Phone app setup
 
-Configure your monitor app (e.g. **Ayrab Monitor**) under **Setup → Zyro Gateway**:
+Configure your mobile client under **Setup → Zyro Gateway** (or equivalent settings screen):
 
 | Field | Value |
 |-------|--------|
@@ -476,7 +476,7 @@ ws://<ip>:<port>/socket.io/?pairing=MYSTORE&role=phone&deviceName=My%20Phone
 | `amount` | `number` | Income amount |
 | `name` | `string` | Payer / customer name |
 | `sender` | `string` | SMS address or account |
-| `transactionNumber` | `string` | Bank / Telebirr reference |
+| `transactionNumber` | `string` | Provider / bank reference from SMS |
 | `timestamp` | `string` | ISO time (optional) |
 | `smsAddress` | `string` | Alias for sender |
 
@@ -658,7 +658,7 @@ Enable 2FA on [npm settings](https://www.npmjs.com/settings) for publish.
 | Project | Role |
 |---------|------|
 | [zyro-getway](https://github.com/orod-codes/zyro-getway) | This repository (server + browser client) |
-| zyro-app (Flutter) | Phone-side SMS income monitor |
+| Mobile monitor | Client that parses SMS and posts income to the gateway |
 
 ---
 
