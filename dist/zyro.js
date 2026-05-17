@@ -28,6 +28,8 @@ var Zyro = (() => {
 
   // zyro/zyro.js
   var DEFAULTS = {
+    ip: "",
+    port: 3e3,
     serverUrl: "",
     pairingCode: "",
     role: "desktop",
@@ -36,6 +38,18 @@ var Zyro = (() => {
     pollIntervalMs: 1500,
     maxItems: 200
   };
+  function resolveBaseUrl(config) {
+    if (config.serverUrl) return normalizeUrl(config.serverUrl);
+    const ip = String(config.ip || "").trim();
+    const port = Number(config.port) || 3e3;
+    if (!ip) {
+      if (typeof location !== "undefined") {
+        return normalizeUrl(`http://${location.hostname}:${port}`);
+      }
+      throw new Error("Zyro: set ip and port in zyro.config.js");
+    }
+    return normalizeUrl(`http://${ip}:${port}`);
+  }
   var EVENTS = {
     READY: "ready",
     STATUS: "status",
@@ -106,25 +120,26 @@ var Zyro = (() => {
       this._emit(EVENTS.STATUS, { status, ...detail });
     }
     async connect() {
-      this._baseUrl = normalizeUrl(this.config.serverUrl);
-      if (!this._baseUrl) throw new Error("Zyro: serverUrl is required");
+      this._baseUrl = resolveBaseUrl(this.config);
       this._setStatus("connecting");
+      const infoRes = await fetch(`${this._baseUrl}/api/info`, { cache: "no-store" });
+      if (!infoRes.ok) throw new Error(`Zyro: cannot reach server (${infoRes.status})`);
       const configured = normalizePairing(this.config.pairingCode);
-      if (configured) {
-        this._pairingCode = configured;
-      } else {
-        const infoRes = await fetch(`${this._baseUrl}/api/info`, { cache: "no-store" });
-        if (!infoRes.ok) throw new Error(`Zyro: cannot reach server (${infoRes.status})`);
-        const info = await infoRes.json();
-        const fallback = normalizePairing(
-          info.pairingCode || info.suggestedPairingCode || ""
+      if (!configured) {
+        throw new Error(
+          "Zyro: pairingCode is required in zyro.config.js (4\u201312 letters/numbers)"
         );
-        if (!fallback) {
-          throw new Error(
-            "Zyro: set pairingCode in zyro.config.js (4\u201312 letters/numbers)"
-          );
-        }
-        this._pairingCode = fallback;
+      }
+      this._pairingCode = configured;
+      const info = await infoRes.json();
+      const cfgPort = Number(this.config.port) || 3e3;
+      if (info.port && info.port !== cfgPort) {
+        console.warn(
+          `Zyro: server port is ${info.port} but zyro.config.js port is ${cfgPort} \u2014 fix port and restart npm start`
+        );
+      }
+      if (info.ip && !this.config.ip) {
+        this.config.ip = info.ip;
       }
       this._connectSocket();
       this._startPollers();
@@ -337,7 +352,7 @@ var Zyro = (() => {
     _addNotification(note) {
       const key = noteKey(note);
       if (this._seenNotes.has(key)) return false;
-      this._seenNotes.add(note);
+      this._seenNotes.add(key);
       const t = String(note.receivedAt || note.timestamp || "");
       if (t && t > this._lastNoteTime) this._lastNoteTime = t;
       this.notifications.unshift(note);

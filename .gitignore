@@ -2,3 +2,5 @@ node_modules/
 .DS_Store
 *.log
 .env
+# Local config (use zyro.config.example.js as template)
+zyro.config.js

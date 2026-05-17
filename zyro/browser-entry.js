@@ -1,1 +1,1 @@
-export { connect, ZyroConnection, DEFAULTS, EVENTS } from './zyro.js';
+export { DEFAULTS, EVENTS, ZyroConnection, connect } from './zyro.js';

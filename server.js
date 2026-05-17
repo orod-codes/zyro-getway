@@ -1,12 +1,42 @@
+#!/usr/bin/env node
 const http = require('http');
 const path = require('path');
 const os = require('os');
 const express = require('express');
 const { Server } = require('socket.io');
+const { loadZyroConfig } = require('./scripts/load-zyro-config');
 
-const PORT = Number(process.env.PORT) || 3000;
-/** Optional default — websites & phones should set their own pairing code. */
-const DEFAULT_PAIRING = normalizePairing(process.env.PAIRING_CODE || '');
+function normalizePairing(raw) {
+  const p = String(raw || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
+  if (p.length < 4 || p.length > 12) return null;
+  return p;
+}
+
+function getLocalIp() {
+  const nets = os.networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name] || []) {
+      if (net.family === 'IPv4' && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+  return '127.0.0.1';
+}
+
+const ZYRO_CONFIG = loadZyroConfig(__dirname);
+const CONFIG_PATH = ZYRO_CONFIG.configPath;
+const PORT =
+  ZYRO_CONFIG.port ??
+  (process.env.PORT ? Number(process.env.PORT) : 3000);
+const CONFIG_PAIRING = normalizePairing(ZYRO_CONFIG.pairingCode) || '';
+
+function publicIp() {
+  return ZYRO_CONFIG.ip || getLocalIp();
+}
 
 const app = express();
 app.use(express.json({ limit: '256kb' }));
@@ -25,31 +55,21 @@ app.use(
     },
   }),
 );
-app.use(
-  express.static(path.join(__dirname, 'public'), {
-    setHeaders(res, filePath) {
-      if (filePath.endsWith('.js') || filePath.endsWith('.html')) {
-        res.setHeader('Cache-Control', 'no-store');
-      }
-    },
-  }),
-);
+app.get('/', (_req, res) => {
+  res.json({ ...serverPublicInfo(), endpoints: ['/api/config', '/api/info', '/api/register', '/api/transactions', '/api/notifications', '/api/dashboard', '/api/devices'], clientScript: '/zyro/zyro.js' });
+});
 
-function normalizePairing(raw) {
-  const p = String(raw || '')
-    .trim()
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '');
-  if (p.length < 4 || p.length > 12) return null;
-  return p;
-}
+/** Server-side settings — port only. Pairing is not configured here. */
+app.get('/api/config', (_req, res) => {
+  res.json(serverConfigPayload());
+});
 
-/** Pairing from query, header, or optional server default. */
+/** Pairing: request first, else zyro.config.js */
 function resolvePairing(req) {
   return (
     normalizePairing(req.query?.pairing) ||
     normalizePairing(req.headers['x-pairing']) ||
-    DEFAULT_PAIRING ||
+    CONFIG_PAIRING ||
     null
   );
 }
@@ -59,25 +79,44 @@ function requirePairing(req, res) {
   if (!pairing) {
     res.status(400).json({
       ok: false,
-      error: 'pairing required — set pairingCode in zyro.config.js or pass ?pairing= / X-Pairing',
+      error: 'pairing required — set pairingCode in zyro.config.js',
     });
     return null;
   }
   return pairing;
 }
 
-app.get('/api/info', (req, res) => {
-  const ip = getLocalIp();
-  const requested = normalizePairing(req.query.pairing);
-  res.json({
-    pairingCode: requested || DEFAULT_PAIRING || null,
-    suggestedPairingCode: DEFAULT_PAIRING || null,
-    pairingRequired: true,
+function serverConfigPayload() {
+  return {
+    ip: publicIp(),
     port: PORT,
-    wsUrl: `ws://${ip}:${PORT}`,
+    pairingCode: CONFIG_PAIRING || null,
+    configFile: path.basename(CONFIG_PATH),
+    configPath: CONFIG_PATH,
+    configLoaded: ZYRO_CONFIG.loaded,
+    configureInZyroConfigJs: ['ip', 'port', 'pairingCode', 'deviceName'],
+  };
+}
+
+function serverPublicInfo() {
+  const ip = publicIp();
+  return {
+    name: 'Zyro Gateway',
+    mode: 'terminal',
+    ...serverConfigPayload(),
     httpUrl: `http://${ip}:${PORT}`,
+    wsUrl: `ws://${ip}:${PORT}`,
     hostname: os.hostname(),
+    pairingCode: CONFIG_PAIRING || null,
+    pairingNote: 'Edit ip, port, pairingCode in zyro.config.js then restart npm start.',
+  };
+}
+
+app.get('/api/info', (_req, res) => {
+  res.json({
+    ...serverPublicInfo(),
     features: ['transactions', 'notifications', 'dashboard', 'devices'],
+    reachable: true,
   });
 });
 
@@ -138,6 +177,18 @@ app.get('/api/notifications', (req, res) => {
   });
 });
 
+app.post('/api/register', (req, res) => {
+  const pairing = requirePairing(req, res);
+  if (!pairing) return;
+  const body = req.body && typeof req.body === 'object' ? req.body : {};
+  const device = touchHttpPhone(pairing, {
+    deviceName: body.deviceName || body.name,
+    platform: body.platform,
+    deviceId: body.deviceId,
+  });
+  res.json({ ok: true, pairing, device });
+});
+
 app.post('/api/income', (req, res) => {
   const pairing = requirePairing(req, res);
   if (!pairing) return;
@@ -145,9 +196,11 @@ app.post('/api/income', (req, res) => {
   if (!payload || typeof payload !== 'object') {
     return res.status(400).json({ ok: false, error: 'Invalid body' });
   }
-  console.log(`[income-http] ${pairing}`);
   broadcastIncome(pairing, payload);
-  bumpPhonePresence(pairing);
+  bumpPhonePresence(pairing, {
+    deviceName: payload.deviceName || payload.sender,
+    platform: 'android',
+  });
   res.json({ ok: true, pairing });
 });
 
@@ -159,7 +212,10 @@ app.post('/api/notification', (req, res) => {
     return res.status(400).json({ ok: false, error: 'Invalid body' });
   }
   broadcastNotification(pairing, payload);
-  bumpPhonePresence(pairing);
+  bumpPhonePresence(pairing, {
+    deviceName: payload.title || payload.appName,
+    platform: 'android',
+  });
   res.json({ ok: true, pairing });
 });
 
@@ -173,17 +229,43 @@ const io = new Server(server, {
   allowEIO3: true,
 });
 
+function formatEtb(amount) {
+  const n = Number(amount);
+  if (!Number.isFinite(n) || n <= 0) return '— ETB';
+  return `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ETB`;
+}
+
+function incomeDisplayFields(payload) {
+  const p = payload && typeof payload === 'object' ? payload : {};
+  const name =
+    String(p.name || p.payerName || p.sender || 'Unknown').trim() || 'Unknown';
+  const amount = formatEtb(p.amount);
+  const sender =
+    String(p.smsAddress || p.accountSource || p.sender || '—').trim() || '—';
+  const txn =
+    String(
+      p.transactionNumber || p.referenceNumber || p.transactionId || '—',
+    ).trim() || '—';
+  return { name, amount, sender, txn };
+}
+
+function printIncomeToTerminal(roomKey, payload) {
+  const { name, amount, sender, txn } = incomeDisplayFields(payload);
+  console.log(`  Income [${roomKey}]`);
+  console.log(`    ${amount}  ·  ${name}`);
+  console.log(`    Sender ${sender}  ·  Ref ${txn}`);
+  console.log('');
+}
+
 function broadcastIncome(roomKey, payload) {
   const room = getRoom(roomKey);
   const roomName = `pairing:${roomKey}`;
   const tx = { ...payload, receivedAt: new Date().toISOString() };
   room.transactions.unshift(tx);
   if (room.transactions.length > 500) room.transactions.length = 500;
+  printIncomeToTerminal(roomKey, tx);
   io.to(roomName).emit('income_transaction', tx);
   io.to(roomName).emit('dashboard_update', buildDashboardPayload(room, roomKey));
-  const who = payload.name || payload.payerName || payload.sender || '?';
-  const txn = payload.transactionNumber || payload.referenceNumber || '—';
-  console.log(`[income] ${roomKey} ETB ${payload.amount} · ${who} · Txn ${txn}`);
 }
 
 function broadcastNotification(roomKey, payload) {
@@ -198,14 +280,70 @@ function broadcastNotification(roomKey, payload) {
   if (room.notifications.length > 200) room.notifications.length = 200;
   io.to(roomName).emit('notification_event', note);
   io.to(roomName).emit('dashboard_update', buildDashboardPayload(room, roomKey));
-  const src = note.source || note.channel || 'unknown';
-  console.log(`[notification] ${roomKey} ${src} · ${String(note.preview || note.title || '').slice(0, 60)}`);
 }
 
-function bumpPhonePresence(roomKey) {
+/** Register phone via HTTP (app shows connected but Socket.IO may be off). */
+function touchHttpPhone(roomKey, meta = {}) {
   const room = getRoom(roomKey);
+  const stableId = String(meta.deviceId || 'phone').replace(/[^a-zA-Z0-9_-]/g, '');
+  const id = `http:${roomKey}:${stableId}`;
+  const prev = room.deviceMap.get(id);
+  const device = {
+    id,
+    role: 'phone',
+    deviceName: meta.deviceName || prev?.deviceName || 'Zyro Phone',
+    platform: meta.platform || 'android',
+    connectedAt: prev?.connectedAt || new Date().toISOString(),
+    lastSeen: new Date().toISOString(),
+    online: true,
+    via: 'http',
+  };
+  room.deviceMap.set(id, device);
   const roomName = `pairing:${roomKey}`;
   io.to(roomName).emit('presence', presencePayload(room));
+  io.to(roomName).emit('device_joined', device);
+  printConnectedDevices(roomKey);
+  return device;
+}
+
+function bumpPhonePresence(roomKey, meta = {}) {
+  touchHttpPhone(roomKey, meta);
+}
+
+function printStartupForApp() {
+  const ip = publicIp();
+  console.log('');
+  console.log('  Zyro Gateway');
+  console.log('  ───────────────────────');
+  console.log(`  Config    ${CONFIG_PATH}${ZYRO_CONFIG.loaded ? '' : ' (missing — run npm run config)'}`);
+  console.log(`  Pairing   ${CONFIG_PAIRING || '— set pairingCode in zyro.config.js'}`);
+  console.log(`  App       IP ${ip}   port ${PORT}`);
+  console.log('');
+  console.log('  Connected: (waiting…)');
+  console.log('  Income:    logs name · amount · sender · ref below');
+  console.log('');
+}
+
+const _connectedPrintKey = new Map();
+
+function printConnectedDevices(roomKey) {
+  const room = getRoom(roomKey);
+  const devices = listDevices(room);
+  const fingerprint = devices.map((d) => `${d.role}:${d.deviceName}`).join('|') || '(none)';
+  if (_connectedPrintKey.get(roomKey) === fingerprint) return;
+  _connectedPrintKey.set(roomKey, fingerprint);
+
+  console.log(`  Connected [${roomKey}]:`);
+  if (devices.length === 0) {
+    console.log('    (none)');
+  } else {
+    for (const d of devices) {
+      const icon = d.role === 'phone' ? '📱' : '🖥️';
+      const via = d.via === 'http' ? ' · HTTP' : '';
+      console.log(`    ${icon} ${d.deviceName}${via}`);
+    }
+  }
+  console.log('');
 }
 
 /** @type {Map<string, RoomState>} */
@@ -232,10 +370,11 @@ function listDevices(room) {
 }
 
 function presencePayload(room) {
+  const devices = listDevices(room);
   return {
-    phones: room.phones,
-    desktops: room.desktops,
-    devices: listDevices(room),
+    phones: devices.filter((d) => d.role === 'phone').length,
+    desktops: devices.filter((d) => d.role === 'desktop').length,
+    devices,
   };
 }
 
@@ -258,8 +397,8 @@ function buildDashboardPayload(room, roomKey) {
       todayTransactionCount: todayTx.length,
       notificationCount: room.notifications.length,
       matchedNotificationCount: matchedNotes,
-      phones: room.phones,
-      desktops: room.desktops,
+      phones: listDevices(room).filter((d) => d.role === 'phone').length,
+      desktops: listDevices(room).filter((d) => d.role === 'desktop').length,
     },
     recentTransactions: room.transactions.slice(0, 8),
     recentNotifications: room.notifications.slice(0, 8),
@@ -290,7 +429,6 @@ io.on('connection', (socket) => {
   const role = String(socket.handshake.query.role || 'phone').toLowerCase();
   const deviceName = String(socket.handshake.query.deviceName || '').trim();
 
-  console.log(`[connect] ${role} pairing=${pairing || '(none)'} id=${socket.id}`);
 
   if (!pairing) {
     socket.emit('sync_error', {
@@ -330,15 +468,16 @@ io.on('connection', (socket) => {
   socket.emit('dashboard_update', buildDashboardPayload(room, roomKey));
   io.to(roomName).emit('presence', presencePayload(room));
   io.to(roomName).emit('device_joined', device);
+  printConnectedDevices(roomKey);
 
   socket.on('register', (payload) => {
     if (!payload || typeof payload !== 'object') return;
     const updated = upsertDevice(room, socket, payload);
     updated.lastSeen = new Date().toISOString();
     room.deviceMap.set(socket.id, updated);
-    console.log(`[register] ${role} room=${roomKey}`, updated.deviceName);
     io.to(roomName).emit('presence', presencePayload(room));
     io.to(roomName).emit('device_updated', updated);
+    printConnectedDevices(roomKey);
   });
 
   socket.on('income_transaction', (payload) => {
@@ -374,31 +513,10 @@ io.on('connection', (socket) => {
       io.to(roomName).emit('device_left', { id: removed.id, role: removed.role });
     }
     io.to(roomName).emit('dashboard_update', buildDashboardPayload(room, roomKey));
+    printConnectedDevices(roomKey);
   });
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  const ip = getLocalIp();
-  console.log('');
-  console.log('  Zyro Gateway');
-  console.log('  ────────────────');
-  console.log(`  URL          : http://${ip}:${PORT}`);
-  if (DEFAULT_PAIRING) {
-    console.log(`  Default code : ${DEFAULT_PAIRING} (optional — override in zyro.config.js)`);
-  } else {
-    console.log('  Pairing      : set pairingCode in zyro.config.js (your site + phone app)');
-  }
-  console.log('');
+  printStartupForApp();
 });
-
-function getLocalIp() {
-  const nets = os.networkInterfaces();
-  for (const name of Object.keys(nets)) {
-    for (const net of nets[name] || []) {
-      if (net.family === 'IPv4' && !net.internal) {
-        return net.address;
-      }
-    }
-  }
-  return '127.0.0.1';
-}

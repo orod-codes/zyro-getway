@@ -1,9 +1,10 @@
 /**
- * Zyro — web client for phone ↔ website real-time sync.
- * Use Zyro.connect({ serverUrl, pairingCode, ... }) in any site.
+ * Zyro web client — use Zyro.connect({ serverUrl, pairingCode, ... }) on any site.
  */
 
-const DEFAULTS = {
+export const DEFAULTS = {
+  ip: '',
+  port: 3000,
   serverUrl: '',
   pairingCode: '',
   role: 'desktop',
@@ -13,7 +14,20 @@ const DEFAULTS = {
   maxItems: 200,
 };
 
-const EVENTS = {
+function resolveBaseUrl(config) {
+  if (config.serverUrl) return normalizeUrl(config.serverUrl);
+  const ip = String(config.ip || '').trim();
+  const port = Number(config.port) || 3000;
+  if (!ip) {
+    if (typeof location !== 'undefined') {
+      return normalizeUrl(`http://${location.hostname}:${port}`);
+    }
+    throw new Error('Zyro: set ip and port in zyro.config.js');
+  }
+  return normalizeUrl(`http://${ip}:${port}`);
+}
+
+export const EVENTS = {
   READY: 'ready',
   STATUS: 'status',
   ERROR: 'error',
@@ -51,7 +65,7 @@ function noteKey(n) {
   return `${n.timestamp || n.receivedAt}|${n.preview}`;
 }
 
-class ZyroConnection {
+export class ZyroConnection {
   constructor(options = {}) {
     this.config = { ...DEFAULTS, ...options };
     this._handlers = new Map();
@@ -60,13 +74,11 @@ class ZyroConnection {
     this._pairingCode = '';
     this._status = 'idle';
     this._pollTimers = [];
-
     this.transactions = [];
     this.notifications = [];
     this.devices = new Map();
     this.dashboard = null;
     this.presence = { phones: 0, desktops: 0 };
-
     this._seenTx = new Set();
     this._seenNotes = new Set();
     this._lastTxTime = '';
@@ -99,27 +111,29 @@ class ZyroConnection {
   }
 
   async connect() {
-    this._baseUrl = normalizeUrl(this.config.serverUrl);
-    if (!this._baseUrl) throw new Error('Zyro: serverUrl is required');
-
+    this._baseUrl = resolveBaseUrl(this.config);
     this._setStatus('connecting');
 
+    const infoRes = await fetch(`${this._baseUrl}/api/info`, { cache: 'no-store' });
+    if (!infoRes.ok) throw new Error(`Zyro: cannot reach server (${infoRes.status})`);
+
     const configured = normalizePairing(this.config.pairingCode);
-    if (configured) {
-      this._pairingCode = configured;
-    } else {
-      const infoRes = await fetch(`${this._baseUrl}/api/info`, { cache: 'no-store' });
-      if (!infoRes.ok) throw new Error(`Zyro: cannot reach server (${infoRes.status})`);
-      const info = await infoRes.json();
-      const fallback = normalizePairing(
-        info.pairingCode || info.suggestedPairingCode || '',
+    if (!configured) {
+      throw new Error(
+        'Zyro: pairingCode is required in zyro.config.js (4–12 letters/numbers)',
       );
-      if (!fallback) {
-        throw new Error(
-          'Zyro: set pairingCode in zyro.config.js (4–12 letters/numbers)',
-        );
-      }
-      this._pairingCode = fallback;
+    }
+    this._pairingCode = configured;
+
+    const info = await infoRes.json();
+    const cfgPort = Number(this.config.port) || 3000;
+    if (info.port && info.port !== cfgPort) {
+      console.warn(
+        `Zyro: server port is ${info.port} but zyro.config.js port is ${cfgPort} — fix port and restart npm start`,
+      );
+    }
+    if (info.ip && !this.config.ip) {
+      this.config.ip = info.ip;
     }
 
     this._connectSocket();
@@ -182,12 +196,10 @@ class ZyroConnection {
       this._setStatus('polling', { reason: 'socket.io not loaded — using HTTP poll only' });
       return;
     }
-
     if (this._socket) {
       this._socket.removeAllListeners();
       this._socket.disconnect();
     }
-
     this._socket = io(this._baseUrl, {
       query: {
         pairing: this._pairingCode,
@@ -201,63 +213,51 @@ class ZyroConnection {
       reconnectionDelayMax: 5000,
       timeout: 20000,
     });
-
     this._socket.on('connect', () => {
       this._setStatus('connected');
       this._pollTransactions();
       this._pollNotifications();
       this._refreshDashboard();
     });
-
     this._socket.on('disconnect', () => this._setStatus('reconnecting'));
     this._socket.on('connect_error', () => this._setStatus('reconnecting'));
-
     this._socket.io.on('reconnect', () => {
       this._pollTransactions();
       this._pollNotifications();
       this._refreshDashboard();
     });
-
     this._socket.on('sync_ready', (data) => {
       this._emit(EVENTS.READY, data);
       this._pollTransactions();
       this._pollNotifications();
       this._refreshDashboard();
     });
-
     this._socket.on('presence', (data) => {
       this.presence = data;
       if (Array.isArray(data.devices)) this._mergeDevices(data.devices);
       this._emit(EVENTS.PRESENCE, data);
       this._emit(EVENTS.DEVICES, this.getDevices());
     });
-
     this._socket.on('device_joined', (d) => {
       this._upsertDevice(d);
       this._emit(EVENTS.DEVICES, this.getDevices());
     });
-
     this._socket.on('device_updated', (d) => {
       this._upsertDevice(d);
       this._emit(EVENTS.DEVICES, this.getDevices());
     });
-
     this._socket.on('device_left', ({ id }) => {
       this.devices.delete(id);
       this._emit(EVENTS.DEVICES, this.getDevices());
     });
-
     this._socket.on('history', (list) => this._mergeTxList(list));
     this._socket.on('notification_history', (list) => this._mergeNoteList(list));
-
     this._socket.on('income_transaction', (tx) => {
       if (this._addTransaction(tx)) this._emit(EVENTS.TRANSACTION, tx);
     });
-
     this._socket.on('notification_event', (note) => {
       if (this._addNotification(note)) this._emit(EVENTS.NOTIFICATION, note);
     });
-
     this._socket.on('dashboard_update', (payload) => {
       this.dashboard = payload;
       this._emit(EVENTS.DASHBOARD, payload);
@@ -291,7 +291,7 @@ class ZyroConnection {
         if (this._addTransaction(tx)) this._emit(EVENTS.TRANSACTION, tx);
       }
     } catch (_) {
-      /* retry */
+      /* ignore poll errors */
     }
   }
 
@@ -306,7 +306,7 @@ class ZyroConnection {
         if (this._addNotification(note)) this._emit(EVENTS.NOTIFICATION, note);
       }
     } catch (_) {
-      /* retry */
+      /* ignore poll errors */
     }
   }
 
@@ -325,9 +325,8 @@ class ZyroConnection {
       }
       this._emit(EVENTS.DASHBOARD, data);
     } catch (_) {
-      /* retry */
+      /* ignore */
     }
-
     try {
       const data = await fetch(
         `${this._baseUrl}/api/devices${this._pairingQuery()}`,
@@ -339,7 +338,7 @@ class ZyroConnection {
         this._emit(EVENTS.DEVICES, this.getDevices());
       }
     } catch (_) {
-      /* retry */
+      /* ignore */
     }
   }
 
@@ -367,7 +366,7 @@ class ZyroConnection {
   _addNotification(note) {
     const key = noteKey(note);
     if (this._seenNotes.has(key)) return false;
-    this._seenNotes.add(note);
+    this._seenNotes.add(key);
     const t = String(note.receivedAt || note.timestamp || '');
     if (t && t > this._lastNoteTime) this._lastNoteTime = t;
     this.notifications.unshift(note);
@@ -411,8 +410,6 @@ class ZyroConnection {
   }
 }
 
-function connect(options) {
+export function connect(options) {
   return new ZyroConnection(options);
 }
-
-export { connect, ZyroConnection, DEFAULTS, EVENTS };
