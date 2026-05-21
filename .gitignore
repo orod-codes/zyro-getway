@@ -6,3 +6,4 @@ zyro.data.js
 .npmrc
 *.log
 .DS_Store
+*.tgz
