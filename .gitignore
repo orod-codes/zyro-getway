@@ -1,4 +1,8 @@
 node_modules/
+check-out/node_modules/
+check-out/dist/
 zyro.config.js
+zyro.data.js
+.npmrc
 *.log
 .DS_Store

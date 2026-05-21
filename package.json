@@ -1,7 +1,7 @@
 {
   "name": "z-getway",
-  "version": "1.0.0",
-  "description": "Zyro Gateway — real-time sync for mobile, web, and system clients",
+  "version": "1.1.0",
+  "description": "Zyro Gateway — real-time income sync, Express Checkout, and browser SDK",
   "license": "MIT",
   "author": "dorsis",
   "repository": {
@@ -31,6 +31,7 @@
   "files": [
     "assets",
     "bin",
+    "check-out/dist",
     "dist",
     "src",
     "zyro",
@@ -38,6 +39,7 @@
     "zyro.config.example.js",
     "server.js",
     "README.md",
+    "SETUP.md",
     "LICENSE",
     "CHANGELOG.md"
   ],
@@ -45,11 +47,14 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "build": "node scripts/build-zyro.js",
+    "build:checkout": "node scripts/build-checkout.js",
+    "build:all": "npm run build && npm run build:checkout",
     "config": "node scripts/init-config.js",
-    "prestart": "npm run build",
+    "demo:orders": "node scripts/demo-order-api.js",
+    "prestart": "npm run build:all",
     "prepare": "npm run build",
-    "prepublishOnly": "npm run build",
-    "release": "npm version patch --no-git-tag-version && npm publish --access public"
+    "prepublishOnly": "npm run build:all",
+    "release": "node scripts/publish-all.js"
   },
   "bin": {
     "z-getway": "bin/z-getway.js",
@@ -62,9 +67,12 @@
     "z-getway",
     "zyro",
     "zyro-gateway",
+    "checkout",
+    "payment-gateway",
     "socket.io",
     "real-time",
-    "payment-sync",
+    "ethiopia",
+    "telebirr",
     "income-sync"
   ],
   "dependencies": {

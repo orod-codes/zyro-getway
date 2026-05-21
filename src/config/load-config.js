@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { createRequire } = require('module');
+const { mergeCheckout } = require('./checkout-config');
 
 const DEFAULTS = {
   ip: '',
@@ -11,6 +12,11 @@ const DEFAULTS = {
   deviceName: '',
   autoConnect: true,
   pollIntervalMs: 1500,
+  /** Save every incoming income/notification to dataFile (default on) */
+  autoSave: true,
+  /** JS file next to zyro.config.js — created by `npx z-getway config` */
+  dataFile: 'zyro.data.js',
+  checkout: null,
 };
 
 function resolveConfigPath(packageDir) {
@@ -32,12 +38,16 @@ function parseExportDefault(text) {
   const deviceMatch = text.match(/deviceName:\s*['"]([^'"]+)['"]/);
   const autoMatch = text.match(/autoConnect:\s*(true|false)/);
   const pollMatch = text.match(/pollIntervalMs:\s*(\d+)/);
+  const autoSaveMatch = text.match(/autoSave:\s*(true|false)/);
+  const dataFileMatch = text.match(/dataFile:\s*['"]([^'"]+)['"]/);
   if (ipMatch) out.ip = ipMatch[1].trim();
   if (portMatch) out.port = Number(portMatch[1]);
   if (pairingMatch) out.pairingCode = pairingMatch[1].trim();
   if (deviceMatch) out.deviceName = deviceMatch[1].trim();
   if (autoMatch) out.autoConnect = autoMatch[1] === 'true';
   if (pollMatch) out.pollIntervalMs = Number(pollMatch[1]);
+  if (autoSaveMatch) out.autoSave = autoSaveMatch[1] === 'true';
+  if (dataFileMatch) out.dataFile = dataFileMatch[1].trim();
   return out;
 }
 
@@ -61,6 +71,8 @@ function loadZyroConfig(packageDir) {
   } catch (_) {
     parsed = parseExportDefault(text);
   }
+
+  parsed.checkout = mergeCheckout(parsed.checkout);
 
   return { ...parsed, configPath, loaded: true };
 }

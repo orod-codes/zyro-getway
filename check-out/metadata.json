@@ -1,0 +1,6 @@
+{
+  "name": "Zyro - Express Checkout",
+  "description": "A high-conversion payment gateway selector with a smooth bottom-sheet animation and trust-focused design.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

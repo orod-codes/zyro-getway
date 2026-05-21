@@ -5,6 +5,8 @@ const os = require('os');
 const { getRoom, listDevices, buildDashboardPayload } = require('./rooms');
 const { resolvePairing } = require('../config/pairing');
 const { touchHttpPhone } = require('./devices');
+const { buildCheckoutApiPayload } = require('../config/checkout-config');
+const { resolveOrderData, pickOrderId } = require('../config/checkout-order-fetch');
 
 function registerRoutes(app, ctx) {
   const {
@@ -67,9 +69,49 @@ function registerRoutes(app, ctx) {
         '/api/notifications',
         '/api/dashboard',
         '/api/devices',
+        '/api/checkout-config',
       ],
       clientScript: '/zyro/zyro.js',
+      checkoutUrl: '/checkout/',
     });
+  });
+
+  app.get('/api/checkout-config', async (req, res) => {
+    const checkout = zyroConfig.checkout;
+    const q = { ...(req.query || {}) };
+    const idKey = checkout?.orderIdParam || 'orderId';
+    let orderId = pickOrderId(q, idKey);
+    const needsApi = Boolean(String(checkout?.orderApiUrl || '').trim());
+
+    if (!orderId && checkout?.defaultOrderId) {
+      orderId = String(checkout.defaultOrderId).trim();
+      q[idKey] = orderId;
+    }
+
+    try {
+      const orderData = await resolveOrderData(checkout, q);
+      if (needsApi && orderId && !orderData) {
+        res.status(502).json({
+          ok: false,
+          error: 'Could not load order from your main system',
+        });
+        return;
+      }
+      if (needsApi && !orderId && !orderData) {
+        res.status(400).json({
+          ok: false,
+          error:
+            'Missing orderId — your store should open /checkout/?orderId=YOUR_ORDER_ID (or set checkout.defaultOrderId for local testing)',
+        });
+        return;
+      }
+      res.json(buildCheckoutApiPayload(checkout, configPairing, orderData));
+    } catch (err) {
+      res.status(err.status && err.status >= 400 ? err.status : 502).json({
+        ok: false,
+        error: err.message || 'Main system order fetch failed',
+      });
+    }
   });
 
   app.get('/api/config', (_req, res) => {

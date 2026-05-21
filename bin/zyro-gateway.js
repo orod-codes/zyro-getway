@@ -10,9 +10,11 @@ if (cmd === 'config' || cmd === 'init') {
 Zyro Gateway — real-time phone ↔ desktop sync
 
 Usage:
-  zyro-gateway              Start the gateway server
+  zyro-gateway              Start gateway + Express Checkout (/checkout/)
   zyro-gateway config       Create zyro.config.js in the current directory
   zyro-gateway help         Show this message
+
+Checkout: http://YOUR_IP:PORT/checkout/?orderId=...  (see SETUP.md)
 
 Environment:
   PORT          Override listen port

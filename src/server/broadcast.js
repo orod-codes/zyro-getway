@@ -3,14 +3,14 @@
 const { getRoom, buildDashboardPayload } = require('./rooms');
 const { printIncome } = require('./terminal');
 const { touchHttpPhone } = require('./devices');
-
-function createBroadcaster(io) {
+function createBroadcaster(io, autoSave) {
   function broadcastIncome(roomKey, payload) {
     const room = getRoom(roomKey);
     const roomName = `pairing:${roomKey}`;
     const tx = { ...payload, receivedAt: new Date().toISOString() };
     room.transactions.unshift(tx);
     if (room.transactions.length > 500) room.transactions.length = 500;
+    if (autoSave) autoSave.saveTransaction(roomKey, tx);
     printIncome(roomKey, tx);
     io.to(roomName).emit('income_transaction', tx);
     io.to(roomName).emit('dashboard_update', buildDashboardPayload(room, roomKey));
@@ -28,6 +28,7 @@ function createBroadcaster(io) {
     }
     room.notifications.unshift(note);
     if (room.notifications.length > 200) room.notifications.length = 200;
+    if (autoSave) autoSave.saveNotification(roomKey, note);
     io.to(roomName).emit('notification_event', note);
     io.to(roomName).emit('dashboard_update', buildDashboardPayload(room, roomKey));
   }

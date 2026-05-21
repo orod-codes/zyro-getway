@@ -4,7 +4,16 @@ const { incomeDisplayFields } = require('../utils/format');
 
 const _connectedPrintKey = new Map();
 
-function printStartup({ configPath, configLoaded, pairing, ip, port }) {
+function printStartup({
+  configPath,
+  configLoaded,
+  pairing,
+  ip,
+  port,
+  dataPath,
+  autoSave,
+  checkoutReady,
+}) {
   console.log('');
   console.log('  Zyro Gateway');
   console.log('  ───────────────────────');
@@ -13,6 +22,13 @@ function printStartup({ configPath, configLoaded, pairing, ip, port }) {
   );
   console.log(`  Pairing   ${pairing || '— set pairingCode in zyro.config.js'}`);
   console.log(`  App       IP ${ip}   port ${port}`);
+  if (autoSave && dataPath) {
+    console.log(`  Auto-save ${dataPath}`);
+  }
+  if (checkoutReady) {
+    console.log(`  Checkout  http://${ip}:${port}/checkout/`);
+    console.log('            Banks in zyro.config.js · order data from checkout.orderApiUrl');
+  }
   console.log('');
   console.log('  Connected: (waiting…)');
   console.log('  Income:    name · amount · sender · ref');

@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('fs');
 const http = require('http');
 const path = require('path');
 const express = require('express');
@@ -11,6 +12,8 @@ const { createBroadcaster } = require('./broadcast');
 const { registerRoutes } = require('./routes');
 const { attachSocketHandlers } = require('./socket');
 const { printStartup } = require('./terminal');
+const { createAutoSave, resolveDataPath } = require('../persistence/auto-save');
+const { getRoom } = require('./rooms');
 
 /**
  * Create an Express + Socket.IO gateway instance (does not listen until `.start()`).
@@ -41,6 +44,29 @@ function createGateway(options = {}) {
     if (req.method === 'OPTIONS') return res.sendStatus(204);
     next();
   });
+  const checkoutDist = path.join(packageRoot, 'check-out', 'dist');
+  const logoAsset = path.join(packageRoot, 'assets', 'zyro-logo.png');
+  if (fs.existsSync(checkoutDist)) {
+    // Only /checkout (no slash) — Express also matches /checkout/ on this route; skip that or loop.
+    app.get('/checkout', (req, res, next) => {
+      if (req.path !== '/checkout') return next();
+      const qs = new URLSearchParams(req.query || {}).toString();
+      res.redirect(301, qs ? `/checkout/?${qs}` : '/checkout/');
+    });
+    app.use(
+      '/checkout',
+      express.static(checkoutDist, {
+        index: 'index.html',
+        redirect: false,
+      }),
+    );
+  }
+  if (fs.existsSync(logoAsset)) {
+    app.get('/checkout/zyro-logo.png', (_req, res) => {
+      res.sendFile(logoAsset);
+    });
+  }
+
   app.use(
     '/zyro',
     express.static(path.join(packageRoot, 'dist'), {
@@ -62,7 +88,14 @@ function createGateway(options = {}) {
     allowEIO3: true,
   });
 
-  const broadcaster = createBroadcaster(io);
+  const dataPath = resolveDataPath(configPath, zyroConfig.dataFile);
+  const autoSave = createAutoSave({
+    dataPath,
+    enabled: zyroConfig.autoSave !== false,
+  });
+  autoSave.loadIntoRooms(getRoom, configPairing);
+
+  const broadcaster = createBroadcaster(io, autoSave);
   const ctx = {
     packageRoot,
     zyroConfig,
@@ -72,6 +105,7 @@ function createGateway(options = {}) {
     publicIp,
     io,
     broadcaster,
+    autoSave,
   };
 
   registerRoutes(app, ctx);
@@ -102,6 +136,9 @@ function createGateway(options = {}) {
             pairing: configPairing,
             ip,
             port,
+            dataPath: autoSave.dataPath,
+            autoSave: zyroConfig.autoSave !== false,
+            checkoutReady: fs.existsSync(checkoutDist),
           });
           resolve({
             url: `http://${ip}:${port}`,

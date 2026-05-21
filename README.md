@@ -15,12 +15,16 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/z-getway">npm</a>
+  <a href="https://www.npmjs.com/package/z-getway">npm (z-getway)</a>
+  ·
+  <a href="https://www.npmjs.com/package/zyro-gateway">npm (zyro-gateway)</a>
   ·
   <a href="https://github.com/orod-codes/zyro-getway">Website</a>
   ·
   <a href="https://github.com/orod-codes/zyro-getway/issues">Issues</a>
 </p>
+
+> Install either package — same gateway: `npm install z-getway` **(recommended)** or `npm install zyro-gateway`
 
 ## Zyro Gateway
 
@@ -154,7 +158,9 @@ npx z-getway
 
 **5. Phone app** → **Setup → Zyro Gateway** → enter the same **IP**, **port**, and **pairing code**.
 
-**6. Website** → load scripts from the gateway (see [Browser client](#browser-client)).
+**6. Express Checkout** — `http://YOUR_IP:PORT/checkout/?orderId=...` (order data from your store API). See **[SETUP.md](SETUP.md)**.
+
+**7. Website** → load scripts from the gateway (see [Browser client](#browser-client)).
 
 ### One-liner (no install)
 
@@ -231,6 +237,11 @@ flowchart LR
 | `deviceName` | `string` | `''` | Default label for web clients. |
 | `autoConnect` | `boolean` | `true` | Browser client connects on load. |
 | `pollIntervalMs` | `number` | `1500` | HTTP poll interval when sockets fail. |
+| `checkout.orderApiUrl` | `string` | `''` | Your store API: `.../orders/{orderId}` → customer, photo, amount |
+| `checkout.defaultOrderId` | `string` | `''` | Dev fallback when opening `/checkout/` without `?orderId=` |
+| `checkout.banks.*` | `object` | — | Per-bank `enabled`, `accountNumber`, `holderName` |
+
+Full walkthrough: **[SETUP.md](SETUP.md)**.
 
 ### Config file resolution order
 
@@ -548,7 +559,9 @@ zyro-getway/
 │   └── index.js             # createGateway(), start()
 ├── zyro/zyro.js             # ESM browser client (source)
 ├── dist/zyro.js             # IIFE bundle (published)
-├── scripts/                 # build, init-config
+├── check-out/               # Express Checkout (built to check-out/dist)
+├── scripts/                 # build, init-config, demo-order-api
+├── SETUP.md                 # Short setup guide
 ├── server.js                # npm start shim
 ├── zyro.config.example.js
 ├── README.md
@@ -593,11 +606,9 @@ From the package root, after code changes:
 npm run release
 ```
 
-That bumps the patch version, builds, and publishes **`z-getway`** to npm. Users then run `npm update z-getway` or `npx z-getway@latest`.
+Builds SDK + checkout, bumps patch, publishes **`z-getway`** and **`zyro-gateway`**. Users: `npm update z-getway` or `npx z-getway@latest`.
 
-See [CHANGELOG.md](CHANGELOG.md) for version history.
-
-> **Note:** The older npm name [`zyro-gateway`](https://www.npmjs.com/package/zyro-gateway) is deprecated; use **`z-getway`** going forward.
+See [CHANGELOG.md](CHANGELOG.md) · [SETUP.md](SETUP.md).
 
 ---
 

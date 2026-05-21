@@ -10,9 +10,11 @@ if (cmd === 'config' || cmd === 'init') {
 Zyro Gateway (z-getway)
 
 Usage:
-  z-getway              Start the gateway server
-  z-getway config       Create zyro.config.js in the current directory
+  z-getway              Start gateway + Express Checkout (/checkout/)
+  z-getway config       Create zyro.config.js + zyro.data.js
   z-getway help         Show this message
+
+Checkout: http://YOUR_IP:PORT/checkout/?orderId=...  (see SETUP.md)
 
 Update to latest:
   npm update z-getway
