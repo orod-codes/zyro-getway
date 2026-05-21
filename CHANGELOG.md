@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.3] - 2026-05-21
+
+### Fixed
+
+- Single listen port: set `port` or `checkout.port` (not both on different numbers).
+- Removed double-listen crash (`ERR_SERVER_ALREADY_LISTEN`).
+
 ## [1.1.2] - 2026-05-21
 
 ### Fixed
