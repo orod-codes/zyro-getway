@@ -74,10 +74,30 @@ Or: npm run release -- --otp=123456
 
 if (user) console.log(`npm user: ${user}`);
 
+/** Use version from package.json (bump there before `npm run release`). */
+const releaseVersion = base.version;
+
+function assertNotPublished(name) {
+  try {
+    const latest = execSync(`npm view ${name} version`, {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+    if (latest === releaseVersion) {
+      console.error(`\n${name}@${releaseVersion} is already on npm. Bump version in package.json first.`);
+      process.exit(1);
+    }
+  } catch {
+    /* package may not exist yet */
+  }
+}
+
 const targets = [
-  { name: 'z-getway', version: nextVersion('z-getway') },
-  { name: 'zyro-gateway', version: nextVersion('zyro-gateway') },
+  { name: 'z-getway', version: releaseVersion },
+  { name: 'zyro-gateway', version: releaseVersion },
 ];
+
+for (const t of targets) assertNotPublished(t.name);
 
 console.log(
   'Will publish:',

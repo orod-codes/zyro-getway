@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`checkout.port`** in config (optional; defaults to gateway `port`).
+- Auto **LAN IP** in `/api/checkout-config` (`gatewayIp`, `serverUrl`, `checkoutUrl`).
 - **Express Checkout** UI at `/checkout/` (Telebirr, CBE, Awash, …).
 - Order data from your **main system** via `checkout.orderApiUrl` + `?orderId=`.
 - `GET /api/checkout-config`, bank accounts from `zyro.config.js`.
@@ -25,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed circular `zyro-gateway` npm dependency from package.
 - `prepublishOnly` / `prestart` build checkout dist.
 - Cleaner `.gitignore` (no `.npmrc`, no `check-out/node_modules`).
+- npm pack includes `check-out/dist` via `.npmignore`.
 
 ## [1.0.2] - 2026-05-17
 
