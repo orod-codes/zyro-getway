@@ -128,7 +128,7 @@ export default function App() {
         }
 
         conn = Zyro.connect({
-          serverUrl: window.location.origin,
+          serverUrl: cfg.serverUrl || window.location.origin,
           pairingCode: cfg.pairingCode,
           role: "desktop",
           deviceName: "Express Checkout",

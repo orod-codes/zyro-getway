@@ -20,7 +20,21 @@ function npmWhoami() {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     }).trim();
-  } catch {
+  } catch (err) {
+    const stderr = String(err.stderr || err.message || '');
+    if (stderr.includes('401') || stderr.includes('Unauthorized')) {
+      const localRc = path.join(root, '.npmrc');
+      if (fs.existsSync(localRc)) {
+        console.error(`
+Stale npm token in ${localRc} — it overrides "npm login".
+
+  rm .npmrc
+  npm login
+  npm run release
+`);
+        process.exit(1);
+      }
+    }
     return null;
   }
 }

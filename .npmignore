@@ -1,0 +1,21 @@
+# Local / dev only
+zyro.config.js
+zyro.data.js
+.npmrc
+check-out/node_modules/
+check-out/src/
+check-out/public/
+check-out/package.json
+check-out/package-lock.json
+check-out/vite.config.ts
+check-out/tsconfig.json
+check-out/index.html
+check-out/metadata.json
+check-out/bank-logo/
+check-out/.gitignore
+*.log
+.DS_Store
+
+# Force-include built checkout (gitignored under check-out/dist)
+!check-out/dist/
+!check-out/dist/**

@@ -237,6 +237,7 @@ flowchart LR
 | `deviceName` | `string` | `''` | Default label for web clients. |
 | `autoConnect` | `boolean` | `true` | Browser client connects on load. |
 | `pollIntervalMs` | `number` | `1500` | HTTP poll interval when sockets fail. |
+| `checkout.port` | `number` | same as `port` | Port for `/checkout/` URL (gateway API stays on `port`) |
 | `checkout.orderApiUrl` | `string` | `''` | Your store API: `.../orders/{orderId}` → customer, photo, amount |
 | `checkout.defaultOrderId` | `string` | `''` | Dev fallback when opening `/checkout/` without `?orderId=` |
 | `checkout.banks.*` | `object` | — | Per-bank `enabled`, `accountNumber`, `holderName` |

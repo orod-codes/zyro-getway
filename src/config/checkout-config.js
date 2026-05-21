@@ -53,6 +53,8 @@ const DEFAULT_CHECKOUT = {
   orderIdParam: 'orderId',
   /** Dev only: used when opening /checkout/ with no ?orderId= (leave '' in production) */
   defaultOrderId: '',
+  /** Checkout URL port — leave unset to use gateway `port` */
+  port: null,
   banks: {
     telebirr: {
       enabled: true,
@@ -85,6 +87,10 @@ function mergeCheckout(raw) {
   if (raw.defaultOrderId != null) {
     base.defaultOrderId = String(raw.defaultOrderId).trim();
   }
+  if (raw.port != null) {
+    const n = Number(raw.port);
+    base.port = Number.isFinite(n) && n > 0 ? n : null;
+  }
   if (raw.banks && typeof raw.banks === 'object') {
     for (const [id, entry] of Object.entries(raw.banks)) {
       if (!BANK_META[id] || !entry || typeof entry !== 'object') continue;
@@ -105,7 +111,13 @@ function resolveCustomerPhotoUrl(name, url) {
   return `https://ui-avatars.com/api/?name=${safe}&background=FF7A18&color=fff&size=128&bold=true`;
 }
 
-function buildCheckoutApiPayload(checkout, pairingCode, orderData) {
+function resolveCheckoutPort(checkout, gatewayPort) {
+  const n = Number(checkout?.port);
+  if (Number.isFinite(n) && n > 0 && n < 65536) return Math.floor(n);
+  return gatewayPort;
+}
+
+function buildCheckoutApiPayload(checkout, pairingCode, orderData, serverMeta) {
   const order = orderData && typeof orderData === 'object' ? orderData : {};
   const customerName = String(order.customerName || '').trim();
   const amountEtb = Number(order.amountEtb);
@@ -135,9 +147,21 @@ function buildCheckoutApiPayload(checkout, pairingCode, orderData) {
   const hasOrder =
     customerName.length > 0 && Number.isFinite(amountEtb) && amountEtb > 0;
 
+  const ip = String(serverMeta?.ip || '127.0.0.1').trim() || '127.0.0.1';
+  const gatewayPort = Number(serverMeta?.gatewayPort) || 3000;
+  const checkoutPort = Number(serverMeta?.checkoutPort) || gatewayPort;
+  const serverUrl = `http://${ip}:${gatewayPort}`;
+  const checkoutUrl = `http://${ip}:${checkoutPort}/checkout/`;
+
   return {
     ok: true,
     pairingCode: pairingCode || null,
+    gatewayIp: ip,
+    gatewayPort,
+    checkoutPort,
+    serverUrl,
+    checkoutUrl,
+    wsUrl: `ws://${ip}:${gatewayPort}`,
     merchantName: checkout.merchantName,
     customerName,
     customerPhotoUrl: resolveCustomerPhotoUrl(customerName, order.customerPhotoUrl),
@@ -148,7 +172,7 @@ function buildCheckoutApiPayload(checkout, pairingCode, orderData) {
     paymentMethods: methods,
     accounts,
     phoneMonitorKeys: methods.flatMap((m) => BANK_META[m.id]?.phoneKeys || []),
-    zyroScript: '/zyro/zyro.js',
+    zyroScript: `${serverUrl}/zyro/zyro.js`,
   };
 }
 
@@ -166,6 +190,7 @@ module.exports = {
   DEFAULT_CHECKOUT,
   mergeCheckout,
   resolveCustomerPhotoUrl,
+  resolveCheckoutPort,
   buildCheckoutApiPayload,
   incomeMatchesBankId,
 };

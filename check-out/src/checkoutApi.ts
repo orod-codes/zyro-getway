@@ -21,6 +21,12 @@ export interface CheckoutConfig {
   customerPhotoUrl: string;
   amountEtb: number;
   orderRef: string;
+  gatewayIp: string;
+  gatewayPort: number;
+  checkoutPort: number;
+  serverUrl: string;
+  checkoutUrl: string;
+  wsUrl: string;
   paymentMethods: PaymentMethod[];
   accounts: Record<string, MerchantAccount>;
   zyroScript: string;

@@ -5,7 +5,10 @@ const os = require('os');
 const { getRoom, listDevices, buildDashboardPayload } = require('./rooms');
 const { resolvePairing } = require('../config/pairing');
 const { touchHttpPhone } = require('./devices');
-const { buildCheckoutApiPayload } = require('../config/checkout-config');
+const {
+  buildCheckoutApiPayload,
+  resolveCheckoutPort,
+} = require('../config/checkout-config');
 const { resolveOrderData, pickOrderId } = require('../config/checkout-order-fetch');
 
 function registerRoutes(app, ctx) {
@@ -105,7 +108,15 @@ function registerRoutes(app, ctx) {
         });
         return;
       }
-      res.json(buildCheckoutApiPayload(checkout, configPairing, orderData));
+      const ip = publicIp();
+      const checkoutPort = resolveCheckoutPort(checkout, port);
+      res.json(
+        buildCheckoutApiPayload(checkout, configPairing, orderData, {
+          ip,
+          gatewayPort: port,
+          checkoutPort,
+        }),
+      );
     } catch (err) {
       res.status(err.status && err.status >= 400 ? err.status : 502).json({
         ok: false,

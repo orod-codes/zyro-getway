@@ -10,6 +10,7 @@ function printStartup({
   pairing,
   ip,
   port,
+  checkoutPort,
   dataPath,
   autoSave,
   checkoutReady,
@@ -26,8 +27,14 @@ function printStartup({
     console.log(`  Auto-save ${dataPath}`);
   }
   if (checkoutReady) {
-    console.log(`  Checkout  http://${ip}:${port}/checkout/`);
-    console.log('            Banks in zyro.config.js · order data from checkout.orderApiUrl');
+    const cp = checkoutPort ?? port;
+    console.log(`  Checkout  http://${ip}:${cp}/checkout/`);
+    if (cp !== port) {
+      console.log(`  Gateway   http://${ip}:${port}  (API + phone)`);
+    }
+    console.log(
+      `            ip auto-detect · checkout.port in zyro.config.js (now ${cp})`,
+    );
   }
   console.log('');
   console.log('  Connected: (waiting…)');

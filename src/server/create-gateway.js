@@ -14,6 +14,7 @@ const { attachSocketHandlers } = require('./socket');
 const { printStartup } = require('./terminal');
 const { createAutoSave, resolveDataPath } = require('../persistence/auto-save');
 const { getRoom } = require('./rooms');
+const { resolveCheckoutPort } = require('../config/checkout-config');
 
 /**
  * Create an Express + Socket.IO gateway instance (does not listen until `.start()`).
@@ -30,6 +31,7 @@ function createGateway(options = {}) {
     zyroConfig.port ??
     3000;
   const configPairing = normalizePairing(zyroConfig.pairingCode) || '';
+  const checkoutPort = resolveCheckoutPort(zyroConfig.checkout, port);
 
   function publicIp() {
     return zyroConfig.ip || getLocalIp();
@@ -101,6 +103,7 @@ function createGateway(options = {}) {
     zyroConfig,
     configPath,
     port,
+    checkoutPort,
     configPairing,
     publicIp,
     io,
@@ -127,7 +130,7 @@ function createGateway(options = {}) {
       const host = listenOptions.host ?? '0.0.0.0';
       return new Promise((resolve, reject) => {
         server.once('error', reject);
-        server.listen(port, host, () => {
+        const onReady = () => {
           server.removeListener('error', reject);
           const ip = publicIp();
           printStartup({
@@ -136,15 +139,25 @@ function createGateway(options = {}) {
             pairing: configPairing,
             ip,
             port,
+            checkoutPort,
             dataPath: autoSave.dataPath,
             autoSave: zyroConfig.autoSave !== false,
             checkoutReady: fs.existsSync(checkoutDist),
           });
           resolve({
             url: `http://${ip}:${port}`,
+            checkoutUrl: `http://${ip}:${checkoutPort}/checkout/`,
             port,
+            checkoutPort,
             pairingCode: configPairing,
           });
+        };
+        server.listen(port, host, () => {
+          if (checkoutPort !== port) {
+            server.listen(checkoutPort, host, onReady);
+          } else {
+            onReady();
+          }
         });
       });
     },

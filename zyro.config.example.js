@@ -29,6 +29,8 @@ module.exports = {
    */
   checkout: {
     merchantName: 'Demo Store PLC',
+    /** Checkout page port — omit to use `port` above; IP is always auto-detected if `ip: ''` */
+    // port: 3001,
     orderApiUrl: 'http://127.0.0.1:4000/api/orders/{orderId}',
     orderIdParam: 'orderId',
     defaultOrderId: '',
