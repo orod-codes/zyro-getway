@@ -1,6 +1,6 @@
 {
   "name": "z-getway",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "description": "Zyro Gateway — real-time income sync, Express Checkout, and browser SDK",
   "license": "MIT",
   "author": "dorsis",
@@ -25,7 +25,7 @@
       "require": "./src/index.js",
       "default": "./src/index.js"
     },
-    "./config.example": "./zyro.config.example.js",
+    "./config.example": "./zyro.config.template.js",
     "./package.json": "./package.json"
   },
   "files": [
@@ -36,6 +36,7 @@
     "src",
     "zyro",
     "scripts",
+    "zyro.config.template.js",
     "zyro.config.example.js",
     "server.js",
     "README.md",

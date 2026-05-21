@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.7] - 2026-05-21
+
+### Fixed
+
+- `npx zyro-gateway config` copies `zyro.config.template.js` (full layout: `checkout.port`, `defaultOrderId: 'ZY-9942'`, bank blocks)—not the shortened example.
+
 ## [1.1.6] - 2026-05-21
 
 ### Fixed

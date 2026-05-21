@@ -11,6 +11,14 @@ const BANK_IDS = [
 ];
 const EXPANDED_BANKS = new Set(['telebirr', 'cbe', 'awash']);
 
+const CONFIG_HEADER = `/**
+ * Edit then restart: npx zyro-gateway
+ *
+ * ip: ''     → auto LAN IP (terminal shows it)
+ * port       → gateway + phone + checkout (all one port)
+ * checkout.port → if set, overrides port for everything
+ */`;
+
 function q(value) {
   return `'${String(value ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
 }
@@ -31,33 +39,24 @@ function formatBank(id, banks, merchantName) {
   return `      ${id}: { enabled: false, accountNumber: '', holderName: ${q(holder)} },`;
 }
 
-/** Same layout as zyro.config.example.js (short header, single quotes, readable banks). */
+/** Same layout as zyro.config.template.js */
 function writeZyroConfig(config) {
   const c = config || {};
   const checkout = c.checkout || {};
   const banks = checkout.banks || {};
   const merchantName = String(checkout.merchantName || 'Demo Store PLC').trim();
   const gatewayPort = Number(c.port) || 3001;
-  const checkoutPort = checkout.port != null ? Number(checkout.port) : null;
-
-  let checkoutPortNote = '';
-  if (Number.isFinite(checkoutPort) && checkoutPort > 0) {
-    checkoutPortNote =
-      '    /** Same as `port` above — or set only this to choose the port */\n' +
-      `    port: ${checkoutPort},\n`;
-  }
+  const checkoutPortRaw = checkout.port != null ? Number(checkout.port) : null;
+  const checkoutPort =
+    Number.isFinite(checkoutPortRaw) && checkoutPortRaw > 0
+      ? checkoutPortRaw
+      : gatewayPort;
 
   const bankLines = BANK_IDS.map((id) => formatBank(id, banks, merchantName)).join(
     '\n',
   );
 
-  return `/**
- * Edit then restart: npx zyro-gateway
- *
- * ip: ''  → auto LAN IP (terminal shows it)
- * port    → gateway + phone + checkout (one port)
- * checkout.orderApiUrl → customer name, photo, amount (not in this file)
- */
+  return `${CONFIG_HEADER}
 
 module.exports = {
   ip: ${q(c.ip ?? '')},
@@ -70,9 +69,11 @@ module.exports = {
   dataFile: ${q(c.dataFile || 'zyro.data.js')},
   checkout: {
     merchantName: ${q(merchantName)},
-${checkoutPortNote}    orderApiUrl: ${q(checkout.orderApiUrl || 'http://127.0.0.1:4000/api/orders/{orderId}')},
+    /** Same as \`port\` above — or set only this to choose the port */
+    port: ${checkoutPort},
+    orderApiUrl: ${q(checkout.orderApiUrl || 'http://127.0.0.1:4000/api/orders/{orderId}')},
     orderIdParam: ${q(checkout.orderIdParam || 'orderId')},
-    defaultOrderId: ${q(checkout.defaultOrderId ?? '')},
+    defaultOrderId: ${q(checkout.defaultOrderId ?? 'ZY-9942')},
     banks: {
 ${bankLines}
     },
@@ -103,7 +104,7 @@ function deepMergeDefaults(target, defaults) {
   return out;
 }
 
-function mergeWithExample(userConfig, exampleConfig) {
+function mergeWithExample(userConfig, templateConfig) {
   const base = {
     ip: '',
     port: 3001,
@@ -113,17 +114,23 @@ function mergeWithExample(userConfig, exampleConfig) {
     pollIntervalMs: 1500,
     autoSave: true,
     dataFile: 'zyro.data.js',
-    checkout: exampleConfig.checkout,
+    checkout: templateConfig.checkout,
   };
   const merged = deepMergeDefaults(userConfig, base);
-  merged.checkout = deepMergeDefaults(userConfig?.checkout, exampleConfig.checkout);
+  merged.checkout = deepMergeDefaults(userConfig?.checkout, templateConfig.checkout);
   if (userConfig?.checkout?.port != null) {
     merged.checkout.port = userConfig.checkout.port;
   }
   if (!String(merged.checkout.orderApiUrl || '').trim()) {
     merged.checkout.orderApiUrl =
-      exampleConfig.checkout?.orderApiUrl ||
+      templateConfig.checkout?.orderApiUrl ||
       'http://127.0.0.1:4000/api/orders/{orderId}';
+  }
+  if (merged.checkout.defaultOrderId === undefined || merged.checkout.defaultOrderId === '') {
+    merged.checkout.defaultOrderId =
+      userConfig?.checkout?.defaultOrderId ??
+      templateConfig.checkout?.defaultOrderId ??
+      'ZY-9942';
   }
   return merged;
 }
