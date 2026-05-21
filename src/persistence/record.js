@@ -1,5 +1,17 @@
 'use strict';
 
+const { BANK_META, incomeMatchesBankId } = require('../config/checkout-config');
+
+function detectPaymentMethod(raw) {
+  for (const [id, meta] of Object.entries(BANK_META)) {
+    if (incomeMatchesBankId(raw, id)) {
+      return { paymentMethod: id, paymentMethodName: meta.name };
+    }
+  }
+  const label = String(raw.accountSource || raw.sender || raw.smsAddress || '').trim();
+  return { paymentMethod: 'unknown', paymentMethodName: label || '—' };
+}
+
 /** Only these fields are written to zyro.data.js */
 function incomeToTemplate(payload) {
   const raw =
@@ -28,17 +40,21 @@ function incomeToTemplate(payload) {
     raw.timestamp || raw.receivedAt || new Date().toISOString(),
   );
 
+  const { paymentMethod, paymentMethodName } = detectPaymentMethod(raw);
+
   return {
     name: name || '—',
     sender: sender || '—',
     amount: Number.isFinite(amount) ? amount : 0,
     transactionNumber: transactionNumber || '—',
     time,
+    paymentMethod,
+    paymentMethodName,
   };
 }
 
 function recordKey(tx) {
-  return `${tx.transactionNumber}|${tx.time}|${tx.amount}|${tx.sender}`;
+  return `${tx.transactionNumber}|${tx.time}|${tx.amount}|${tx.sender}|${tx.paymentMethod}`;
 }
 
 function formatDataFile(transactions) {
@@ -49,6 +65,8 @@ function formatDataFile(transactions) {
     amount: ${tx.amount},
     transactionNumber: ${JSON.stringify(tx.transactionNumber)},
     time: ${JSON.stringify(tx.time)},
+    paymentMethod: ${JSON.stringify(tx.paymentMethod)},
+    paymentMethodName: ${JSON.stringify(tx.paymentMethodName)},
   }`;
   });
   const list = lines.length ? lines.join(',\n') : '';
@@ -61,4 +79,4 @@ ${list}
 `;
 }
 
-module.exports = { incomeToTemplate, recordKey, formatDataFile };
+module.exports = { incomeToTemplate, recordKey, formatDataFile, detectPaymentMethod };

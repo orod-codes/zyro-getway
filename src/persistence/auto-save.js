@@ -45,7 +45,7 @@ function createAutoSave(options = {}) {
     };
   }
 
-  /** @type {Array<{name,sender,amount,transactionNumber,time}>} */
+  /** @type {Array<{name,sender,amount,transactionNumber,time,paymentMethod,paymentMethodName}>} */
   let transactions = [];
   let writeTimer = null;
 
@@ -99,6 +99,8 @@ function createAutoSave(options = {}) {
         ...row,
         receivedAt: row.time,
         timestamp: row.time,
+        accountSource: row.paymentMethodName,
+        smsAddress: row.sender,
       });
       seen.add(id);
     }

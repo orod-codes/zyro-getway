@@ -55,10 +55,10 @@ function printConnectedDevices(roomKey, devices) {
 }
 
 function printIncome(roomKey, payload) {
-  const { name, amount, sender, txn } = incomeDisplayFields(payload);
+  const { name, amount, sender, txn, bank } = incomeDisplayFields(payload);
   console.log(`  Income [${roomKey}]`);
   console.log(`    ${amount}  ·  ${name}`);
-  console.log(`    Sender ${sender}  ·  Ref ${txn}`);
+  console.log(`    ${bank}  ·  Sender ${sender}  ·  Ref ${txn}`);
   console.log('');
 }
 

@@ -1,5 +1,7 @@
 'use strict';
 
+const { detectPaymentMethod } = require('../persistence/record');
+
 function formatEtb(amount) {
   const n = Number(amount);
   if (!Number.isFinite(n) || n <= 0) return '— ETB';
@@ -20,7 +22,8 @@ function incomeDisplayFields(payload) {
     String(
       p.transactionNumber || p.referenceNumber || p.transactionId || '—',
     ).trim() || '—';
-  return { name, amount, sender, txn };
+  const { paymentMethodName } = detectPaymentMethod(p);
+  return { name, amount, sender, txn, bank: paymentMethodName };
 }
 
 module.exports = { formatEtb, incomeDisplayFields };
