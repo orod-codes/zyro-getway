@@ -1,65 +1,80 @@
 'use strict';
 
-/** Serialize merged config to zyro.config.js (same shape as zyro.config.example.js). */
+const BANK_IDS = [
+  'telebirr',
+  'cbe',
+  'awash',
+  'dashen',
+  'hibret',
+  'coop',
+  'abyssinia',
+];
+const EXPANDED_BANKS = new Set(['telebirr', 'cbe', 'awash']);
+
+function q(value) {
+  return `'${String(value ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+}
+
+function formatBank(id, banks, merchantName) {
+  const b = banks[id] || {};
+  const holder = String(b.holderName || merchantName || 'Demo Store PLC').trim();
+  const enabled = b.enabled !== false;
+  const account = String(b.accountNumber || '').trim();
+
+  if (EXPANDED_BANKS.has(id) && enabled) {
+    return `      ${id}: {
+        enabled: true,
+        accountNumber: ${q(account)},
+        holderName: ${q(holder)},
+      },`;
+  }
+  return `      ${id}: { enabled: false, accountNumber: '', holderName: ${q(holder)} },`;
+}
+
+/** Same layout as zyro.config.example.js (short header, single quotes, readable banks). */
 function writeZyroConfig(config) {
-  const c = config;
-  const banks = c.checkout?.banks || {};
-  const bankLine = (id) => {
-    const b = banks[id] || {};
-    const en = b.enabled !== false;
-    const holder =
-      b.holderName || c.checkout?.merchantName || 'Demo Store PLC';
-    return `      ${id}: { enabled: ${en}, accountNumber: ${JSON.stringify(String(b.accountNumber || ''))}, holderName: ${JSON.stringify(String(holder))} },`;
-  };
+  const c = config || {};
+  const checkout = c.checkout || {};
+  const banks = checkout.banks || {};
+  const merchantName = String(checkout.merchantName || 'Demo Store PLC').trim();
+  const gatewayPort = Number(c.port) || 3001;
+  const checkoutPort = checkout.port != null ? Number(checkout.port) : null;
+
+  let checkoutPortNote = '';
+  if (Number.isFinite(checkoutPort) && checkoutPort > 0) {
+    checkoutPortNote =
+      '    /** Same as `port` above — or set only this to choose the port */\n' +
+      `    port: ${checkoutPort},\n`;
+  }
+
+  const bankLines = BANK_IDS.map((id) => formatBank(id, banks, merchantName)).join(
+    '\n',
+  );
 
   return `/**
- * Zyro Gateway config — create or refresh:
- *   npx zyro-gateway config
- *   npx zyro-gateway config --upgrade
+ * Edit then restart: npx zyro-gateway
  *
- * Loaded from (first match):
- *   1. ZYRO_CONFIG env path
- *   2. ./zyro.config.js in the directory you start the server from
- *   3. zyro.config.js next to this package
- *
- * ONE listen port: gateway API, phone app, and /checkout/ all use \`port\` below.
- * Customer name, photo, and amount come from checkout.orderApiUrl — not this file.
+ * ip: ''  → auto LAN IP (terminal shows it)
+ * port    → gateway + phone + checkout (one port)
+ * checkout.orderApiUrl → customer name, photo, amount (not in this file)
  */
 
 module.exports = {
-  /** PC LAN IP — leave '' to auto-detect (printed in terminal on start) */
-  ip: ${JSON.stringify(String(c.ip ?? ''))},
-  /** Gateway + phone + Express Checkout (single port) */
-  port: ${Number(c.port) || 3001},
-  /** Same code in phone app Settings → Zyro Gateway */
-  pairingCode: ${JSON.stringify(String(c.pairingCode || 'MYSTORE'))},
-  /** Label for web clients (optional) */
-  deviceName: ${JSON.stringify(String(c.deviceName || 'My Website'))},
+  ip: ${q(c.ip ?? '')},
+  port: ${gatewayPort},
+  pairingCode: ${q(c.pairingCode || 'MYSTORE')},
+  deviceName: ${q(c.deviceName || 'My Website')},
   autoConnect: ${c.autoConnect !== false},
   pollIntervalMs: ${Number(c.pollIntervalMs) || 1500},
-  /** Incoming SMS/income rows → dataFile (includes paymentMethod per bank) */
   autoSave: ${c.autoSave !== false},
-  dataFile: ${JSON.stringify(String(c.dataFile || 'zyro.data.js'))},
-
-  /**
-   * Express Checkout — bank accounts here only.
-   * Send customers: http://YOUR_IP:PORT/checkout/?orderId=ORDER_123
-   * orderApiUrl must return JSON: { customerName, customerPhotoUrl?, amountEtb, orderRef? }
-   */
+  dataFile: ${q(c.dataFile || 'zyro.data.js')},
   checkout: {
-    merchantName: ${JSON.stringify(String(c.checkout?.merchantName || 'Demo Store PLC'))},
-    orderApiUrl: ${JSON.stringify(String(c.checkout?.orderApiUrl || ''))},
-    orderIdParam: ${JSON.stringify(String(c.checkout?.orderIdParam || 'orderId'))},
-    /** Dev only — opening /checkout/ without ?orderId= (use '' in production) */
-    defaultOrderId: ${JSON.stringify(String(c.checkout?.defaultOrderId ?? ''))},
+    merchantName: ${q(merchantName)},
+${checkoutPortNote}    orderApiUrl: ${q(checkout.orderApiUrl || 'http://127.0.0.1:4000/api/orders/{orderId}')},
+    orderIdParam: ${q(checkout.orderIdParam || 'orderId')},
+    defaultOrderId: ${q(checkout.defaultOrderId ?? '')},
     banks: {
-      ${bankLine('telebirr')}
-      ${bankLine('cbe')}
-      ${bankLine('awash')}
-      ${bankLine('dashen')}
-      ${bankLine('hibret')}
-      ${bankLine('coop')}
-      ${bankLine('abyssinia')}
+${bankLines}
     },
   },
 };
@@ -102,6 +117,9 @@ function mergeWithExample(userConfig, exampleConfig) {
   };
   const merged = deepMergeDefaults(userConfig, base);
   merged.checkout = deepMergeDefaults(userConfig?.checkout, exampleConfig.checkout);
+  if (userConfig?.checkout?.port != null) {
+    merged.checkout.port = userConfig.checkout.port;
+  }
   if (!String(merged.checkout.orderApiUrl || '').trim()) {
     merged.checkout.orderApiUrl =
       exampleConfig.checkout?.orderApiUrl ||

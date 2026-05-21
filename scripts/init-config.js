@@ -38,7 +38,9 @@ function configNeedsUpgrade(text) {
   return (
     !text.includes('checkout:') ||
     !text.includes('orderApiUrl') ||
-    !text.includes('dataFile')
+    !text.includes('dataFile') ||
+    text.includes('Zyro Gateway config — create or refresh') ||
+    /accountNumber: "/.test(text)
   );
 }
 
