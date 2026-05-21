@@ -1,17 +1,21 @@
 /**
- * Zyro Gateway config — create in your project:
+ * Zyro Gateway config — create or refresh:
  *   npx zyro-gateway config
+ *   npx zyro-gateway config --upgrade
  *
  * Loaded from (first match):
  *   1. ZYRO_CONFIG env path
  *   2. ./zyro.config.js in the directory you start the server from
  *   3. zyro.config.js next to this package
+ *
+ * ONE listen port: gateway API, phone app, and /checkout/ all use `port` below.
+ * Customer name, photo, and amount come from checkout.orderApiUrl — not this file.
  */
 
 module.exports = {
-  /** PC LAN IP — leave '' to auto-detect (shown in terminal on start) */
+  /** PC LAN IP — leave '' to auto-detect (printed in terminal on start) */
   ip: '',
-  /** Gateway + phone + checkout (use one port) */
+  /** Gateway + phone + Express Checkout (single port) */
   port: 3001,
   /** Same code in phone app Settings → Zyro Gateway */
   pairingCode: 'MYSTORE',
@@ -19,20 +23,20 @@ module.exports = {
   deviceName: 'My Website',
   autoConnect: true,
   pollIntervalMs: 1500,
+  /** Incoming SMS/income rows → dataFile (includes paymentMethod per bank) */
   autoSave: true,
   dataFile: 'zyro.data.js',
 
   /**
-   * Express Checkout — banks/accounts here; customer + amount from your main system API.
-   * Send users to: http://YOUR_IP:PORT/checkout/?orderId=ORDER_123
+   * Express Checkout — bank accounts here only.
+   * Send customers: http://YOUR_IP:PORT/checkout/?orderId=ORDER_123
    * orderApiUrl must return JSON: { customerName, customerPhotoUrl?, amountEtb, orderRef? }
    */
   checkout: {
     merchantName: 'Demo Store PLC',
-    /** Optional — overrides top-level `port` when set */
-    // port: 3001,
     orderApiUrl: 'http://127.0.0.1:4000/api/orders/{orderId}',
     orderIdParam: 'orderId',
+    /** Dev only — opening /checkout/ without ?orderId= (use '' in production) */
     defaultOrderId: '',
     banks: {
       telebirr: {

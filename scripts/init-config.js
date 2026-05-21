@@ -1,36 +1,83 @@
 #!/usr/bin/env node
+'use strict';
+
 const fs = require('fs');
 const path = require('path');
+const { createRequire } = require('module');
 const { DATA_TEMPLATE } = require('../src/persistence/auto-save');
+const { writeZyroConfig, mergeWithExample } = require('./write-zyro-config');
 
 const root = path.join(__dirname, '..');
-const example = path.join(root, 'zyro.config.example.js');
+const examplePath = path.join(root, 'zyro.config.example.js');
 const cwd = process.cwd();
 const configTarget = path.join(cwd, 'zyro.config.js');
 const dataTarget = path.join(cwd, 'zyro.data.js');
+const upgrade = process.argv.includes('--upgrade');
+
+function loadExample() {
+  if (!fs.existsSync(examplePath)) {
+    console.error('Missing', examplePath);
+    process.exit(1);
+  }
+  const req = createRequire(examplePath);
+  return req(examplePath);
+}
+
+function loadUserConfig() {
+  if (!fs.existsSync(configTarget)) return null;
+  try {
+    const req = createRequire(configTarget);
+    return req(configTarget);
+  } catch (err) {
+    console.error('Could not read', configTarget, err.message);
+    process.exit(1);
+  }
+}
+
+function configNeedsUpgrade(text) {
+  return (
+    !text.includes('checkout:') ||
+    !text.includes('orderApiUrl') ||
+    !text.includes('dataFile')
+  );
+}
 
 let created = 0;
 
 if (!fs.existsSync(configTarget)) {
-  if (!fs.existsSync(example)) {
-    console.error('Missing', example);
-    process.exit(1);
-  }
-  fs.copyFileSync(example, configTarget);
+  fs.copyFileSync(examplePath, configTarget);
   console.log('Created', configTarget);
   created += 1;
 } else {
-  console.log('Already exists:', configTarget);
+  const text = fs.readFileSync(configTarget, 'utf8');
+  const stale = configNeedsUpgrade(text);
+  if (upgrade || stale) {
+    const example = loadExample();
+    const user = loadUserConfig() || {};
+    const merged = mergeWithExample(user, example);
+    fs.writeFileSync(configTarget, writeZyroConfig(merged), 'utf8');
+    console.log(
+      upgrade ? 'Upgraded' : 'Updated missing checkout fields in',
+      configTarget,
+    );
+    created += 1;
+  } else {
+    console.log('Already up to date:', configTarget);
+    console.log('  Re-run with: npx zyro-gateway config --upgrade');
+  }
 }
 
 if (!fs.existsSync(dataTarget)) {
   fs.writeFileSync(dataTarget, DATA_TEMPLATE, 'utf8');
-  console.log('Created', dataTarget, '(incoming requests auto-save here)');
+  console.log('Created', dataTarget, '(incoming income auto-saves here)');
   created += 1;
 } else {
   console.log('Already exists:', dataTarget);
 }
 
 if (created) {
-  console.log('Edit ip, port, pairingCode in zyro.config.js then run: npx z-getway');
+  console.log('');
+  console.log('Next: edit ip, port, pairingCode, checkout.orderApiUrl then run:');
+  console.log('  npx zyro-gateway');
+  console.log('Checkout: http://YOUR_IP:PORT/checkout/?orderId=...');
 }

@@ -6,7 +6,10 @@ const { createRequire } = require('module');
 const { incomeToTemplate, recordKey, formatDataFile } = require('./record');
 
 const DATA_TEMPLATE = `/**
- * Zyro Gateway — incoming income (auto-saved)
+ * Zyro Gateway — incoming income (auto-saved when autoSave: true)
+ *
+ * Each row: name, sender, amount, transactionNumber, time,
+ *           paymentMethod (telebirr | cbe | awash | …), paymentMethodName
  */
 module.exports = [
 ];

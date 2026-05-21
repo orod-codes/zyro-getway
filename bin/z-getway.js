@@ -12,6 +12,7 @@ Zyro Gateway (z-getway)
 Usage:
   z-getway              Start gateway + Express Checkout (/checkout/)
   z-getway config       Create zyro.config.js + zyro.data.js
+  z-getway config --upgrade   Merge missing checkout fields into existing config
   z-getway help         Show this message
 
 Checkout: http://YOUR_IP:PORT/checkout/?orderId=...  (see SETUP.md)

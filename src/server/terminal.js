@@ -27,7 +27,7 @@ function printStartup({
   }
   if (checkoutReady) {
     console.log(`  Checkout  http://${ip}:${port}/checkout/`);
-    console.log(`            port from zyro.config.js (port or checkout.port)`);
+    console.log(`            one port — set port in zyro.config.js`);
   }
   console.log('');
   console.log('  Connected: (waiting…)');

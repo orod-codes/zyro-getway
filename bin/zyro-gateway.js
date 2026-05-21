@@ -11,7 +11,8 @@ Zyro Gateway — real-time phone ↔ desktop sync
 
 Usage:
   zyro-gateway              Start gateway + Express Checkout (/checkout/)
-  zyro-gateway config       Create zyro.config.js in the current directory
+  zyro-gateway config       Create zyro.config.js + zyro.data.js
+  zyro-gateway config --upgrade   Merge missing checkout fields into existing config
   zyro-gateway help         Show this message
 
 Checkout: http://YOUR_IP:PORT/checkout/?orderId=...  (see SETUP.md)

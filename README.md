@@ -123,19 +123,13 @@ npm start
 **1. Create config** (in your project folder—not committed to git):
 
 ```bash
-npx z-getway config
+npm install zyro-gateway   # or: z-getway
+npx zyro-gateway config    # creates zyro.config.js + zyro.data.js
+# already have an old config?
+npx zyro-gateway config --upgrade
 ```
 
-**2. Edit `zyro.config.js`:**
-
-```javascript
-module.exports = {
-  ip: '',              // auto-detect LAN IP
-  port: 3001,
-  pairingCode: 'MYSTORE',
-  deviceName: 'My Website',
-};
-```
+**2. Edit `zyro.config.js`** — set `pairingCode`, `port`, bank accounts, and `checkout.orderApiUrl` (your store API for customer + amount). See **[SETUP.md](SETUP.md)**.
 
 **3. Start the gateway:**
 
@@ -237,8 +231,8 @@ flowchart LR
 | `deviceName` | `string` | `''` | Default label for web clients. |
 | `autoConnect` | `boolean` | `true` | Browser client connects on load. |
 | `pollIntervalMs` | `number` | `1500` | HTTP poll interval when sockets fail. |
-| `checkout.port` | `number` | same as `port` | Port for `/checkout/` URL (gateway API stays on `port`) |
-| `checkout.orderApiUrl` | `string` | `''` | Your store API: `.../orders/{orderId}` → customer, photo, amount |
+| `autoSave` / `dataFile` | — | `true` / `zyro.data.js` | Auto-save income; rows include `paymentMethod` |
+| `checkout.orderApiUrl` | `string` | demo URL in example | Store API: `.../orders/{orderId}` → customer, photo, amount |
 | `checkout.defaultOrderId` | `string` | `''` | Dev fallback when opening `/checkout/` without `?orderId=` |
 | `checkout.banks.*` | `object` | — | Per-bank `enabled`, `accountNumber`, `holderName` |
 
@@ -534,7 +528,8 @@ Useful for tests, Electron backends, or custom hosting.
 | Command | Description |
 |---------|-------------|
 | `z-getway` | Start server (builds client if needed) |
-| `z-getway config` | Copy `zyro.config.example.js` → `./zyro.config.js` |
+| `z-getway config` | Create `./zyro.config.js` + `./zyro.data.js` |
+| `z-getway config --upgrade` | Merge missing `checkout` / fields into existing config |
 | `z-getway help` | Show usage |
 
 ### npm scripts (repository)

@@ -13,8 +13,7 @@ npm install && npm run config
 | Section | You set | From your store API |
 |---------|---------|---------------------|
 | `ip` | Optional (`''` = auto LAN IP) | — |
-| `port`, `pairingCode` | Yes | — |
-| `checkout.port` | Checkout URL port (default = `port`) | — |
+| `port`, `pairingCode` | Yes — **one port** for API, phone, and `/checkout/` | — |
 | `checkout.banks` | Account + holder per bank | — |
 | `checkout.orderApiUrl` | URL to fetch orders | Returns customer, photo, amount |
 | `checkout.defaultOrderId` | Dev only (`''` in prod) | — |

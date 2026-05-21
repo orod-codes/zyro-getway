@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.5] - 2026-05-21
+
+### Changed
+
+- `zyro.config.example.js` documents single port, order API, and `paymentMethod` in `zyro.data.js`.
+- `npx zyro-gateway config --upgrade` merges missing `checkout` fields into an existing config (no longer stuck on old templates).
+- `zyro-gateway config` also creates `zyro.data.js` (same as `z-getway config`).
+
 ## [1.1.4] - 2026-05-21
 
 ### Added
