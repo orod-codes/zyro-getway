@@ -11,7 +11,7 @@
 module.exports = {
   /** PC LAN IP — leave '' to auto-detect (shown in terminal on start) */
   ip: '',
-  /** Gateway port (phone app + website must match) */
+  /** Gateway + phone + checkout (use one port) */
   port: 3001,
   /** Same code in phone app Settings → Zyro Gateway */
   pairingCode: 'MYSTORE',
@@ -29,7 +29,7 @@ module.exports = {
    */
   checkout: {
     merchantName: 'Demo Store PLC',
-    /** Checkout page port — omit to use `port` above; IP is always auto-detected if `ip: ''` */
+    /** Optional — overrides top-level `port` when set */
     // port: 3001,
     orderApiUrl: 'http://127.0.0.1:4000/api/orders/{orderId}',
     orderIdParam: 'orderId',

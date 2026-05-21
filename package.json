@@ -1,6 +1,6 @@
 {
   "name": "z-getway",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Zyro Gateway — real-time income sync, Express Checkout, and browser SDK",
   "license": "MIT",
   "author": "dorsis",
@@ -77,7 +77,9 @@
   ],
   "dependencies": {
     "express": "^4.21.2",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "z-getway": "^1.1.0",
+    "zyro-gateway": "^1.1.2"
   },
   "devDependencies": {
     "esbuild": "^0.25.0"

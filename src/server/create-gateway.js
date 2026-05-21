@@ -26,12 +26,13 @@ function createGateway(options = {}) {
   const zyroConfig = loadZyroConfig(packageRoot);
   const configPath = zyroConfig.configPath;
   const envPort = process.env.PORT ? Number(process.env.PORT) : null;
-  const port =
+  const configPort =
     (Number.isFinite(envPort) && envPort > 0 ? envPort : null) ??
     zyroConfig.port ??
     3000;
+  /** One port for gateway, checkout, and phone — set `checkout.port` or top-level `port` */
+  const port = resolveCheckoutPort(zyroConfig.checkout, configPort);
   const configPairing = normalizePairing(zyroConfig.pairingCode) || '';
-  const checkoutPort = resolveCheckoutPort(zyroConfig.checkout, port);
 
   function publicIp() {
     return zyroConfig.ip || getLocalIp();
@@ -103,7 +104,6 @@ function createGateway(options = {}) {
     zyroConfig,
     configPath,
     port,
-    checkoutPort,
     configPairing,
     publicIp,
     io,
@@ -128,36 +128,40 @@ function createGateway(options = {}) {
      */
     start(listenOptions = {}) {
       const host = listenOptions.host ?? '0.0.0.0';
+      const listenPort = Number(port);
       return new Promise((resolve, reject) => {
-        server.once('error', reject);
-        const onReady = () => {
-          server.removeListener('error', reject);
+        const onError = (err) => {
+          if (err.code === 'EADDRINUSE') {
+            reject(
+              new Error(
+                `Port ${err.port ?? listenPort} is in use. Run: fuser -k ${listenPort}/tcp — or change port / checkout.port in zyro.config.js`,
+              ),
+            );
+          } else {
+            reject(err);
+          }
+        };
+        server.once('error', onError);
+
+        server.listen(listenPort, host, () => {
+          server.removeListener('error', onError);
           const ip = publicIp();
           printStartup({
             configPath,
             configLoaded: zyroConfig.loaded,
             pairing: configPairing,
             ip,
-            port,
-            checkoutPort,
+            port: listenPort,
             dataPath: autoSave.dataPath,
             autoSave: zyroConfig.autoSave !== false,
             checkoutReady: fs.existsSync(checkoutDist),
           });
           resolve({
-            url: `http://${ip}:${port}`,
-            checkoutUrl: `http://${ip}:${checkoutPort}/checkout/`,
-            port,
-            checkoutPort,
+            url: `http://${ip}:${listenPort}`,
+            checkoutUrl: `http://${ip}:${listenPort}/checkout/`,
+            port: listenPort,
             pairingCode: configPairing,
           });
-        };
-        server.listen(port, host, () => {
-          if (checkoutPort !== port) {
-            server.listen(checkoutPort, host, onReady);
-          } else {
-            onReady();
-          }
         });
       });
     },
